@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\hooks">
+      <UniqueIdentifier>{c737d746-9d4d-4993-bc8d-6d0929f4da78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\root">
+      <UniqueIdentifier>{b7a416fb-30ce-46be-91c0-64e25e372c33}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hooks">
+      <UniqueIdentifier>{fc604852-dec5-44e0-9780-2298083c7cd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\root">
+      <UniqueIdentifier>{6c8591b0-a006-4e67-97f3-de21e80e542e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism">
+      <UniqueIdentifier>{e13ea3e3-63e0-4095-8c3d-b4f5b1f05a76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prism">
+      <UniqueIdentifier>{d792ab56-6d09-48fe-be68-721e46631810}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hooks\hook.h">
+      <Filter>Header Files\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks\sound.h">
+      <Filter>Header Files\hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="hooks_core.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="fmod_event.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="fmod_manager.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="global_variables.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="memory.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="memory_structure.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="sdk_stores.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="telemetry_data.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\string.h">
+      <Filter>Header Files\prism</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\token.h">
+      <Filter>Header Files\prism</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\sound.h">
+      <Filter>Header Files\prism</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\cvar.h">
+      <Filter>Header Files\prism</Filter>
+    </ClInclude>
+    <ClInclude Include="includes_windows.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="tick.h">
+      <Filter>Header Files\root</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hooks\sound.cpp">
+      <Filter>Source Files\hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="hooks\hook.cpp">
+      <Filter>Source Files\hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="hooks_core.cpp">
+      <Filter>Source Files\root</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files\root</Filter>
+    </ClCompile>
+    <ClCompile Include="fmod_event.cpp">
+      <Filter>Source Files\root</Filter>
+    </ClCompile>
+    <ClCompile Include="fmod_manager.cpp">
+      <Filter>Source Files\root</Filter>
+    </ClCompile>
+    <ClCompile Include="prism\cvar.cpp">
+      <Filter>Source Files\prism</Filter>
+    </ClCompile>
+    <ClCompile Include="tick.cpp">
+      <Filter>Source Files\root</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ts-fmod-plugin-v2.rc" />
+  </ItemGroup>
+</Project>

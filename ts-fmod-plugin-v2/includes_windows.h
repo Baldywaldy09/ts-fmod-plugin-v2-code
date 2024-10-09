@@ -1,0 +1,23 @@
+#pragma once
+
+// Windows:
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <Windows.h>
+#include <combaseapi.h>
+#include <sstream>
+#include <filesystem>
+#include <fstream>
+#include <unordered_set>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <cassert>
+#include <unordered_map>
+#include <thread>
+#include <vector>
+#include <future>
+#include <chrono>
+#include <functional>
+#include <variant>
+#include <map>
