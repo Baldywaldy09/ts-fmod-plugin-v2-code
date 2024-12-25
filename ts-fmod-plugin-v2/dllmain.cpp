@@ -1,4 +1,7 @@
-﻿#include "includes_windows.h"
+﻿#define TSFMOD_API_VOID void __stdcall
+#define TSFMOD_EXPORT extern "C" __declspec(dllexport)
+
+#include "includes_windows.h"
 #include "global_variables.h"
 #include "telemetry_data.h"
 #include "hooks_core.h"
@@ -9,6 +12,8 @@
 #include "sdk_stores.h"
 #include "common.h"
 #include "memory.h"
+#include <windows.h>
+#include <shellapi.h>
 
 namespace fs = std::filesystem;
 
@@ -17,27 +22,48 @@ using namespace global_variables::cvar;
 using namespace global_variables::truck;
 
 scs_log_t scs_log;
-
 fmod_manager* fmod_manager_instance;
-
 hooks_core* g_hooks = nullptr;
-
 telemetry_data_t telemetry_data;
 
 scs_telemetry_register_for_channel_t register_for_channel = nullptr;
 #define register_channel(name, index, type, trailer_or_truck, field) register_for_channel(name, index, SCS_VALUE_TYPE_##type, SCS_TELEMETRY_CHANNEL_FLAG_no_value, telemetry_store_##type, &telemetry_data.trailer_or_truck.field);
 
+// ALL API FUNCTIONS MUST GO FROM A-Z TO KEEP RVA THE SAME
 
+std::string currentTruckName = "NO_TRUCK"; 
+TSFMOD_EXPORT TSFMOD_API_VOID a_getCurrentTruckName(char* buffer, size_t bufferSize)
+{
+    scs_log(0, "[ts-fmod-plugin-v2] API Function 'getCurrentTruckName' Called"); 
+    strncpy_s(buffer, bufferSize, currentTruckName.c_str(), _TRUNCATE);
+}
+
+TSFMOD_EXPORT TSFMOD_API_VOID b_reloadVehicleSounds()
+{
+    scs_log(0, "[ts-fmod-plugin-v2] API Function 'reloadVehicleSounds' Called");
+
+    scs_log(0, ("[ts-fmod-plugin-v2] Reloading all events for vehicle " + currentTruckName).c_str());
+
+    fmod_manager_instance->load_truck_banks(fs::current_path().append("plugins/ts-fmod-plugin-v2"), currentTruckName, currentTruckName);
+    fmod_manager_instance->check_events();
+    fmod_manager_instance->mute_game_audio();
+
+    // Force engine sound reload
+    stored_engine_state = 0;
+
+     
+    scs_log(0, ("[ts-fmod-plugin-v2] Events and audio for vehicle: " + currentTruckName + " have been reloaded").c_str());
+}
+
+std::string lastTruckName = "NO_TRUCK";
 SCSAPI_VOID handle_configuration(const scs_event_t event, const void* const event_info, const scs_context_t context)
 {
     const struct scs_telemetry_configuration_t* const info = static_cast<const scs_telemetry_configuration_t*>(event_info);
     std::string id = info->id;
 
-    std::string truckBrand;
-    std::string truckName;
-    std::string truckFullName;
-
     if (id.compare(SCS_TELEMETRY_CONFIG_truck) == 0) {
+        std::string truckBrand;
+        std::string truckName;
         for (const scs_named_value_t* current = info->attributes; current->name; ++current) {
             const std::string name = current->name;
             if (name.compare(SCS_TELEMETRY_CONFIG_ATTRIBUTE_brand) == 0) {
@@ -47,19 +73,27 @@ SCSAPI_VOID handle_configuration(const scs_event_t event, const void* const even
                 truckName = static_cast<std::string>(current->value.value_string.value);
             }
         }
+
+        if (truckName == "" && truckBrand == "")
+        {
+            currentTruckName = "NO_TRUCK";
+            lastTruckName = "NO_TRUCK";
+            return;
+        }
+
+        std::string truckFullName = truckBrand + " " + truckName;
+        if (truckFullName == lastTruckName) return;
+
+        scs_log(0, ("[ts-fmod-plugin-v2] Entered vehicle: " + truckFullName + " | Loading events").c_str());
+        currentTruckName = truckFullName;
+
+        fmod_manager_instance->load_truck_banks(fs::current_path().append("plugins/ts-fmod-plugin-v2"), truckFullName, lastTruckName);
+        fmod_manager_instance->check_events();
+        fmod_manager_instance->mute_game_audio();
+
+        lastTruckName = truckFullName;
+        scs_log(0, ("[ts-fmod-plugin-v2] Events and audio for vehicle: " + truckFullName + " have been loaded").c_str());
     }
-    if (truckName == "" && truckBrand == "") return;
-    truckFullName = truckBrand + " " + truckName;
-    if (truckFullName == lastTruckName) return;
-
-    scs_log(0, ("[ts-fmod-plugin-v2] Entered vehicle: " + truckFullName + " | Loading events").c_str());
-
-    fmod_manager_instance->load_truck_banks(fs::current_path().append("plugins/ts-fmod-plugin-v2"), truckFullName, lastTruckName);
-    fmod_manager_instance->check_events();
-    fmod_manager_instance->mute_game_audio();
-
-    lastTruckName = truckFullName;
-    scs_log(0, ("[ts-fmod-plugin-v2] Events and audio for vehicle: " + truckFullName + " have been loaded").c_str());
 }
 
 SCSAPI_VOID telemetry_pause(const scs_event_t event, const void* const event_info, scs_context_t context)
@@ -211,6 +245,7 @@ void register_all_channels()
     register_channel(SCS_TELEMETRY_TRAILER_CHANNEL_world_placement, SCS_U32_NIL, dplacement, trailer, world_placement)
 } 
 
+#pragma comment( linker, "/export:scs_telemetry_init=scs_telemetry_init" )
 SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_init_params_t* const params)
 {
     std::stringstream ss;
@@ -230,10 +265,53 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
             << " while plugin is made for version 1." << common::supported_game_version <<
             ". The plugin will not load to prevent crashes.";
         scs_log(2, ss.str().c_str());
+
+        HWND hwnd = GetForegroundWindow();
+
+        std::wstringstream message;
+        message << L"Unsupported game version detected!\n\nExpected: ver " << common::plugin_version
+            << L"\nYou have: ver 1." << game_version
+            << L"\n\nWould you like to check for a avaliable update?";
+
+        int result = MessageBoxW(NULL, message.str().c_str(), L"TS-FMOD-Plugin V2 / Improved", MB_YESNO | MB_ICONERROR | MB_TOPMOST);
+        if (result == IDYES)
+        {
+            ShellExecute(0, 0, L"https://github.com/Baldywaldy09/ts-fmod-plugin-v2/releases/latest", 0, 0, SW_SHOW);
+        }
+
         return SCS_RESULT_generic_error;
     }
     // End //
 
+    // Force version label
+    const char* versionTXT = "plugins\\ts-fmod-plugin-v2\\version.tsfv";
+    if (!fs::exists(versionTXT))
+    {
+        scs_log(1, "[ts-fmod-plugin-v2] Didnt find version txt! Creating...");
+        std::ofstream outfile(versionTXT);
+
+        if (outfile.is_open())
+        {
+            outfile << common::plugin_version << ".1";
+            outfile.close();
+        }
+        else {
+            scs_log(1, "[ts-fmod-plugin-v2] Unable to open file 'version.tsfv' for writing");
+        }
+    }
+    else
+    {
+        std::ofstream outfile(versionTXT, std::ios::trunc); // std::ios::trunc clears the file content
+        if (outfile.is_open())
+        {
+            outfile << common::plugin_version << ".1";
+            outfile.close();
+        }
+        else
+        {
+            scs_log(1, "[ts-fmod-plugin-v2] Unable to open file 'version.tsfv' for writing");
+        }
+    }
 
     // Find Memory + cvar pointers
     scs_log(0, "[ts-fmod-plugin-v2] Searching memory... If this is one of the last messages in the log after a crash, try disabling this plugin.");
@@ -304,10 +382,10 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     auto core_camera_ptr = core_camera_instruction + *reinterpret_cast<int32_t*>(core_camera_instruction + 3) + 7;
 
     ss.str("");
-    ss << "[ts-fmod-plugin-v2] Found base_ctrl: 'game_base+" << std::hex << (base_ctrl_ptr - game_base) 
-        << "', game_actor: 'game_base+" << std::hex << (base_ctrl_ptr - game_base) << "+" << std::hex << game_actor_offset 
-        << "', unk_interior: 'game_base+" << (unk_interior_ptr - game_base) 
-        << "', core_camera: 'game_base+" << (core_camera_ptr - game_base) << "'";
+    ss << "[ts-fmod-plugin-v2] Found base_ctrl: 'game_base+" << std::hex << base_ctrl_instruction
+        << "', game_actor: 'game_base+" << base_ctrl_instruction << "+" << game_actor_offset
+        << "', unk_interior: 'game_base+" << unk_interior_instruction
+        << "', core_camera: 'game_base+" << core_camera_instruction << "'";
     scs_log(SCS_LOG_TYPE_message, ss.str().c_str());
     // End //
 
@@ -374,10 +452,11 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     return SCS_RESULT_ok;
 }
 
+#pragma comment( linker, "/export:scs_telemetry_shutdown=scs_telemetry_shutdown" )
 SCSAPI_VOID scs_telemetry_shutdown(void)
 {
     // Allow the game audio to take over:
-    // fmod_manager_instance->unmute_game_audio(); // tmp make crash
+     fmod_manager_instance->unmute_game_audio(); // tmp make crash
 
     if (fmod_manager_instance != nullptr)
     {
@@ -387,4 +466,6 @@ SCSAPI_VOID scs_telemetry_shutdown(void)
 
     //g_hooks->uninitialize();
     delete g_hooks;
+
+    scs_log(0, "[ts-fmod-plugin-v2] Plugin Unloaded | You will not have custom sounds");
 }

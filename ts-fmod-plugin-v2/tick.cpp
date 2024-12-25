@@ -3,6 +3,7 @@
 #include "hooks_core.h"
 #include "common.h"
 #include "memory.h"
+#include "prism/sound.h"
 
 struct Vector3 {
     float x;
@@ -13,14 +14,15 @@ struct Vector3 {
 using namespace global_variables::audio;
 using namespace global_variables::cvar;
 using namespace global_variables::truck;
+using namespace global_variables::memory;
 bool start_bad = false; // cannot be global
+unsigned long long engineSoundEventPtr; // cannot be global
 
 Vector3 truckRot;
 Vector3 cameraPos;
 Vector3 cameraRot;
 uint64_t cameraPosValuePtr;
 
-game_actor_u* game_actor;
 unk_interior* interior;
 core_camera_u* core_camera;
 
@@ -192,6 +194,7 @@ void handle_volume(telemetry_data_t* telemetry_data)
         current_interior_volume = interior_volume;
     }
 
+
     if (game_actor != nullptr)
     {
         if (core_camera->vehicle_camera != nullptr)
@@ -304,8 +307,34 @@ void handle_engine(telemetry_data_t* telemetry_data)
     }
 }
 
+bool isRetarderActive = false;
 void handle_truck_effects(telemetry_data_t* telemetry_data)
 {
+   
+  //  scs_log__(0, ("rpm: " + std::to_string(telemetry_data->truck.engine_rpm)).c_str());
+
+    fmod_manager_instance_->set_global_parameter("retarder", telemetry_data->truck.retarder_level);
+
+    if (telemetry_data->truck.retarder_level > 0 &&
+        telemetry_data->truck.effective_throttle < 0.09f &&
+        !isRetarderActive
+    )
+    {
+        fmod_manager_instance_->set_event_state("effects/retarder", true, true);
+        fmod_manager_instance_->set_event_state("retarder/retarder", true, true);
+        isRetarderActive = true;
+
+        scs_log__(0, "Retarder");
+    }
+    else if (telemetry_data->truck.retarder_level == 0 && isRetarderActive)
+    { 
+        fmod_manager_instance_->set_event_state("effects/retarder", false);
+        fmod_manager_instance_->set_event_state("retarder/retarder", false);
+        isRetarderActive = false;
+
+        scs_log__(0, "No Retarder");
+    }
+
     if (engineRunning)
     {
         if (telemetry_data->truck.displayed_gear != lastGear)
@@ -334,6 +363,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
 {
     if (game_actor != nullptr)
     {
+        // Handle basic interior buttons
         const auto hazard_warning = game_actor->hazard_warning_state;
         if (!common::cmpf(hazard_warning, hazard_warning_state))
         {
@@ -362,6 +392,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
             wipers_stick_state = wipers_stick;
         }
 
+        // Handle Wipers
         if (game_actor->wipers_position > 0 && game_actor->wipers_position < 0.5)
         {
             // scs calls `wipers_up` when its moving down
@@ -380,8 +411,10 @@ void handle_interior(telemetry_data_t* telemetry_data)
             fmod_manager_instance_->set_event_state("interior/wipers_down", false);
         }
 
-        if ((game_actor->is_left_window_moving != 0 || game_actor->is_right_window_moving != 0) &&
-            (game_actor->left_window_moving_direction > 2 || game_actor->right_window_moving_direction > 2))
+
+        // Handle window movement
+        if ((game_actor->is_right_window_moving != 0 || game_actor->is_left_window_moving != 0) // is any window moving
+            && (game_actor->left_window_moving_direction > 2 || game_actor->right_window_moving_direction > 2))  // if its moving and not just reached the end
         {
             is_window_moving = true;
             fmod_manager_instance_->set_global_parameter("window_stop", 0.f);
@@ -389,53 +422,54 @@ void handle_interior(telemetry_data_t* telemetry_data)
 
             if (game_actor->is_left_window_moving != 0)
             {
-                //fmod_manager_instance_->set_event_3d_posrot("interior/window_move", -1.f);
+                scs_log__(0, "l window moving");
+                fmod_manager_instance_->set_event_3d_posrot("interior/window_move", -1.f, 0, 0);
             }
             else if (game_actor->is_right_window_moving != 0)
             {
-                //fmod_manager_instance_->set_event_3d_posrot("interior/window_move", 1.f);
+                scs_log__(0, "r window moving");
+                fmod_manager_instance_->set_event_3d_posrot("interior/window_move", 1.f, 0, 0);
             }
         }
         else if (is_window_moving)
         {
+            scs_log__(0, "no window moving");
             is_window_moving = false;
-            fmod_manager_instance_->set_global_parameter("window_stop", 1.0f);
+            fmod_manager_instance_->set_global_parameter("window_stop", 1.f);
             fmod_manager_instance_->set_event_state("interior/window_move", false);
         }
 
+
+        // Handle window buttons
         if ((game_actor->left_window_state == 1.f && game_actor->left_window_btn_state == 1.f) ||
             (game_actor->left_window_state == 0.f && game_actor->left_window_btn_state == 0.f))
         {
             if (!is_left_window_button_active)
-            {
                 fmod_manager_instance_->set_event_state("interior/window_click", true, false);
-            }
+
             is_left_window_button_active = true;
         }
         else if (is_left_window_button_active)
-        {
             is_left_window_button_active = false;
-        }
+
+
         if ((game_actor->right_window_state == 1.f && game_actor->right_window_btn_state == 1.f) ||
             (game_actor->right_window_state == 0.f && game_actor->right_window_btn_state == 0.f))
         {
             if (!is_right_window_button_active)
-            {
                 fmod_manager_instance_->set_event_state("interior/window_click", true, false);
-            }
+
             is_right_window_button_active = true;
         }
         else if (is_right_window_button_active)
-        {
             is_right_window_button_active = false;
-        }
     }
 
     if (interior != nullptr)
     {
         const auto window_pos = interior->window_state;
-        if (window_pos.x >= 0 && window_pos.x <= 1) fmod_manager_instance_->set_global_parameter("wnd_left", window_pos.x);
-        if (window_pos.y >= 0 && window_pos.y <= 1) fmod_manager_instance_->set_global_parameter("wnd_right", window_pos.y);
+        fmod_manager_instance_->set_global_parameter("wnd_left", window_pos.x);
+        fmod_manager_instance_->set_global_parameter("wnd_right", window_pos.y);
 
         if (interior->is_camera_inside)
         {
@@ -446,16 +480,17 @@ void handle_interior(telemetry_data_t* telemetry_data)
 
             float finalVolume = window_volume + (leftWindowBoost + rightWindowBoost);
 
+            finalVolume += 0.05; // game_data.sii: // Interior sound attenuation value (the outside sounds will have 5% of original volume)
+
             fmod_manager_instance_->set_bus_volume("outside", finalVolume);
             fmod_manager_instance_->set_bus_volume("outside/exterior", finalVolume);
             fmod_manager_instance_->set_bus_volume("exterior", finalVolume);
         }
         else
-        {
+        { 
             fmod_manager_instance_->set_bus_volume("outside", 1);
             fmod_manager_instance_->set_bus_volume("outside/exterior", 1);
             fmod_manager_instance_->set_bus_volume("exterior", 1);
-
         }
 
         if (interior->interior_camera)
@@ -540,7 +575,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
 
     if (telemetry_data->truck.retarder_level != prev_retarder_level)
     {
-        fmod_manager_instance_->set_event_state("interior/stick_retarder", true, true);
+        fmod_manager_instance_->set_event_state("interior/stick_retarder", true);
         prev_retarder_level = telemetry_data->truck.retarder_level;
     }
 
@@ -552,6 +587,43 @@ void handle_interior(telemetry_data_t* telemetry_data)
 
 }
 
+bool reeferRunning = false;
+bool reeferStarted = false;
+void handle_reefer(telemetry_data_t* telemetry_data)
+{
+    if (telemetry_data->trailer.connected)
+    {
+        if (!reeferRunning)
+        {
+            if (!reeferStarted)
+            {
+                fmod_manager_instance_->set_event_state("reefer_up", true);
+                reeferStarted = true;
+            }
+
+
+            if (fmod_manager_instance_->is_event_playing("reefer_up") == 2)
+            {
+                fmod_manager_instance_->set_event_state("reefer_traffic", true);
+                fmod_manager_instance_->set_global_parameter("is_reefer_on", 1);
+                fmod_manager_instance_->set_global_parameter("is_owned_trailer", 1);
+
+                reeferRunning = true;
+            }
+        }
+    }
+    else
+    {
+        if (reeferRunning)
+        {
+            fmod_manager_instance_->set_event_state("reefer_traffic", false);
+            fmod_manager_instance_->set_event_state("reefer_down", true);
+            reeferRunning = false;
+            reeferStarted = false;
+        }
+    }
+}
+
 bool gotPointer = false;
 SCSAPI_VOID tick::telemetry_tick(const scs_event_t event, const void* const event_info, const scs_context_t context)
 {
@@ -560,9 +632,7 @@ SCSAPI_VOID tick::telemetry_tick(const scs_event_t event, const void* const even
     const auto base_ctrl_address = *reinterpret_cast<uint64_t*>(base_ctrl_ptr);
     const auto game_actor_ptr = base_ctrl_address + game_actor_offset;
     game_actor = *reinterpret_cast<game_actor_u**>(game_actor_ptr);
-
     interior = *reinterpret_cast<unk_interior**>(unk_interior_ptr);
-
     core_camera = *reinterpret_cast<core_camera_u**>(core_camera_ptr);
 
     if (fmod_manager_instance_ == nullptr)
@@ -578,22 +648,23 @@ SCSAPI_VOID tick::telemetry_tick(const scs_event_t event, const void* const even
     }
 
     bool development = false;
-
     if (development)
     {
         std::stringstream ss;
-        ss << "game_actor: " << std::hex << game_actor;
-        ss << "\ncurrent_camera: " << game_actor->current_camera;
+        ss << "left_window_moving_direction: " << game_actor->left_window_moving_direction;
 
-        size_t offset = (reinterpret_cast<size_t>(&(game_actor->current_camera)) - reinterpret_cast<size_t>(game_actor));
-        ss << "\ncurrent_camera offset: " << std::hex << offset;
+       // size_t offset = (reinterpret_cast<size_t>(&(game_actor->current_camera)) - reinterpret_cast<size_t>(game_actor));
+       // ss << "\ncurrent_camera offset: " << std::hex << offset;
         scs_log__(0, ss.str().c_str());
     }
 
     handle_volume(telemetry_data); 
     handle_engine(telemetry_data);
     handle_truck_effects(telemetry_data);
+   // handle_reefer(telemetry_data);
     handle_interior(telemetry_data);
 
+
+   // fmod_manager_instance_->set_event_state("retarder/retarder", true, true);
     fmod_manager_instance_->update(); 
 }

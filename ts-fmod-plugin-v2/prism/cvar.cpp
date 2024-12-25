@@ -90,13 +90,19 @@ int prism::cvar::init(scs_log_t scs_log__)
     const auto game_base = memory::get_game_base();
 
     std::stringstream ss;
-    ss << "[ts-fmod-plugin-v2][prism::cvar] Found g_set_value: 'game_base+" << std::hex << (g_set_cvar_valueAddress - game_base)
-        << "', g_get_value: 'game_base+" << std::hex << (g_get_cvar_valueAddress - game_base)
-        << "', g_register: 'game_base+" << (g_register_cvar_valueAddress - game_base)
-        << "', g_unregister: 'game_base+" << (g_unregister_cvar_valueAddress - game_base) 
-        << "', g_store: 'game_base+" << (g_store_address - game_base)
-        << "', profile_base: 'game_base+" << (unk_profile_base_ptr - game_base) << "'";
-
+    ss << "[ts-fmod-plugin-v2][prism::cvar] Found g_set_value: 'game_base+"
+        << std::hex << std::uppercase << g_set_cvar_valueAddress
+        << "', g_get_value: 'game_base+"
+        << std::hex << std::uppercase << g_get_cvar_valueAddress
+        << "', g_register: 'game_base+"
+        << std::hex << std::uppercase << g_register_cvar_valueAddress
+        << "', g_unregister: 'game_base+"
+        << std::hex << std::uppercase << g_unregister_cvar_valueAddress
+        << "', g_store: 'game_base+"
+        << std::hex << std::uppercase << g_store_address
+        << "', profile_base: 'game_base+"
+        << std::hex << std::uppercase << unk_profile_base_ptr
+        << "'";
     scs_log_(0, ss.str().c_str());
 
     initialised = true;
@@ -203,6 +209,8 @@ __int64 prism::cvar::unregister_name(prism::cvar::pointer cvar_pointer)
 
 void prism::cvar::store(bool main_config, bool config_profile_local, bool config_profile)
 {
+    return; // disabled because of the 1.52 update 
+
     // 0 = global config // main_config
     // 1 = local profile config // config_profile_local
     // 2 = profile config // config_profile
@@ -210,7 +218,8 @@ void prism::cvar::store(bool main_config, bool config_profile_local, bool config
     const char* profile_name = *reinterpret_cast<const char**>(
         *reinterpret_cast<uint64_t*>(
             *reinterpret_cast<uint64_t*>(
-                *reinterpret_cast<uint64_t*>(unk_profile_base_ptr) + 0xBC0) + 0x0) + 0x18) + 0x0;
+                *reinterpret_cast<uint64_t*>(
+                    *reinterpret_cast<uint64_t*>(unk_profile_base_ptr) + 0x38) + 0x1F0) + 0x0) + 0x18) + 0x0;
 
     std::ostringstream oss;
     for (size_t i = 0; profile_name[i] != '\0'; ++i) {
@@ -220,4 +229,4 @@ void prism::cvar::store(bool main_config, bool config_profile_local, bool config
     if (main_config) { g_store("/home/config.cfg", 0); }
     if (config_profile_local) { g_store(("/home/profiles/" + oss.str() + "/config_local.cfg").c_str(), 1); }
     if (config_profile) { g_store(("/home/profiles/" + oss.str() + "/config.cfg").c_str(), 2); }
-}
+} 

@@ -154,7 +154,7 @@ public:
     char pad_024C[20];                                              // 0x024C (0x14)
     float wipers_stick;                                             // 0x0260 (0x04) 0 = off, 0.333 = intermittent, 0.666 = slow, 1 = fast
     float wipers_state;                                             // 0x0264 (0x04) 0 = off, 0.333 = intermittent, 0.666 = slow, 1 = fast (instant)
-    char pad_0268[12];                                              // 0x0268 (0x0c)
+    char pad_0268[12 + 4 + 4];                                              // 0x0268 (0x0c)
     uint8_t left_window_moving_direction;                           // 0x0274 (0x01) 1 = got to end down; 2 = got to end up; 16 = down; 32 = up
     uint8_t is_left_window_moving;                                  // 0x0275 (0x01) 1 = down auto; 16 = down holding btn; 2 = auto up; 32 = up holding button
     char pad_0276[2];                                               // 0x0276 (0x02)
@@ -169,19 +169,6 @@ public:
     float right_window_state;                                       // 0x0290 (0x04) 0 = up; 1 = down
     float right_window_btn;                                         // 0x0294 (0x04) 0 = up; 0.5 off; 1 = down
     float right_window_btn_state;                                   // 0x0298 (0x04) 0 = up; 0.5 off; 1 = down (instant)
-    char pad_029C[1828];                                            // 0x029C (0x724)
-    class N00009B3C* N00002C10;                                     // 0x09C0 (0x08)
-    char pad_09C8[144];                                             // 0x09C8 (0x90)
-    class model_object_u* model_object;                             // 0x0A58 (0x08)
-    char pad_0A60[16];                                              // 0x0A60 (0x10)
-    class physics_gearbox_sequential_u* physics_gearbox_sequential; // 0x0A70 (0x08)
-    class physics_gearbox_automatic_u* physics_gearbox_automatic;   // 0x0A78 (0x08)
-    class physics_gearbox_direct_u* physics_gearbox_direct;         // 0x0A80 (0x08)
-    char pad_0A88[8];                                               // 0x0A88 (0x08)
-    class accessory_head_lights_data_u* accessory_head_lights_data; // 0x0A90 (0x08)
-    char pad_0A98[1096];                                            // 0x0A98 (0x448)
-    token_t N00002CB4;                                              // 0x0EE0 (0x08)
-    char pad_0EE8[264];                                             // 0x0EE8 (0x108)
 };
 
 class sound_t

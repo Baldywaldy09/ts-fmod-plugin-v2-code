@@ -9,6 +9,8 @@
 
 using namespace std;
 
+static std::vector<std::thread> threads;
+
 uintptr_t sound_event_update_address;
 typedef bool(__fastcall* prism_sound_event_update_t) (
     const prism::sound_event_t* sound_event,
@@ -23,8 +25,39 @@ namespace hooks
     string customEvents = "engine/start_bad | interior/noise | effects/gear_grind | effects/gear_wrong | effects/air_brake | effects/hook_attach | effects/hook_detach | interior/system_warning1 | interior/system_warning2 | interior/system_warning3 |"; // sounds that the plugin needs to play from here:
     string whenStopped = "interior/noise |"; // sounds that should play only when last one has stopped playing
 
-    bool detoured_sound_event_update(prism::sound_event_t* sound_event, const bool stop, const int64_t a3)
+    void breakThreads()
     {
+        scs_log(0, "breaking threads");
+
+        for (auto& t : threads) {
+            if (t.joinable()) {
+                t.join();
+            }
+        }
+    }
+
+    void playHorn(prism::sound_event_t* sound_event)
+    {
+        scs_log(0, "created");
+
+        while (true)
+        {
+            hooks_core::g_hooks->get_fmod_manager()->set_event_state("horn/horn_01", true);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(400));
+        }
+
+        breakThreads();
+    }
+
+    void startHornLoop(prism::sound_event_t* sound_event)
+    {
+        scs_log(0, "creating thread");
+        threads.emplace_back([&]() { playHorn(sound_event); });
+    }
+
+    bool detoured_sound_event_update(prism::sound_event_t* sound_event, const bool stop, const int64_t a3)
+    { 
         string event;
         string soundRef = sound_event->soundref_content.str.c_str;
         if (soundRef.find('#') != string::npos) { event = soundRef.substr(soundRef.find('#')); event = event.erase(0, 1); }
@@ -42,8 +75,19 @@ namespace hooks
         {
             if (hooks_core::g_hooks->get_fmod_manager()->get_event(event.c_str())) // if the user has the sound
             {
+                stringstream ss;
+                ss << "Event: '" << event << "' was found. Muting...";
+               // scs_log(0, ss.str().c_str());
+
                 sound_event->volume = 0;
             }
+        }
+
+        if (event.find("horn/horn_") != string::npos)
+        {
+          //  startHornLoop(sound_event);
+
+         //   sound_event->volume = 0;
         }
 
         if (customEvents.find(event + " |") != string::npos)
@@ -97,5 +141,7 @@ namespace hooks
             return;
         }
         installed_ = false;
+        
+        // breakThreads();
     }
 }

@@ -1,8 +1,13 @@
 #pragma once
 #include "prism/cvar.h"
+#include "memory_structure.h"
 
 namespace global_variables
 {
+    namespace memory
+    {
+        inline game_actor_u* game_actor;
+    }
 
     namespace audio
     {
@@ -44,7 +49,6 @@ namespace global_variables
 
     namespace truck
     {
-        inline std::string lastTruckName = "None";
         inline uint32_t stored_engine_state = 0;
         inline byte indicator_stick_state = false;
         inline bool was_indicator_light_on = false;

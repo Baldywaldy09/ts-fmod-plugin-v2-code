@@ -22,6 +22,15 @@ namespace prism
         char pad_001C[20];            // 0x001C (0x14)
     };
 
+    typedef struct PRISMFMOD_3D_ATTRIBUTES
+    {
+        FMOD_VECTOR position; //0x0000 (0x0c)
+        char pad_000C[4]; //0x000C (0x04)
+        FMOD_VECTOR velocity; //0x0010 (0x0c)
+        FMOD_VECTOR forward; //0x001C (0x0c)
+        FMOD_VECTOR up; //0x0028 (0x0c)
+    };
+
     typedef struct sound_event_t
     {
         char pad_0008[40];                            // 0x0008 (0x28)
@@ -32,7 +41,7 @@ namespace prism
         string_dyn_t soundref_content;                // 0x0058 (0x18)
         float volume;                                 // 0x0070 (0x04)
         float pitch;                                  // 0x0074 (0x04)
-        class FMOD_3D_ATTRIBUTES* fmod_3d_attributes; // 0x0078 (0x08)
+        PRISMFMOD_3D_ATTRIBUTES* fmod_3d_attributes; // 0x0078 (0x08)
         fmod_bank_t* bank;                            // 0x0080 (0x08)
         uint64_t fmod_event_instance_id;              // 0x0088 (0x08) ?
         uint64_t fmod_parameter_id;                   // 0x0090 (0x08) ?

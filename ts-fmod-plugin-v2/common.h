@@ -4,8 +4,9 @@
 
 namespace common
 {
-    inline const char* plugin_version = "1.51";
-    constexpr uint32_t supported_game_version = 51;
+    inline bool debug = true;
+    inline const char* plugin_version = "1.53";
+    constexpr uint32_t supported_game_version = 53;
 
     inline FMOD_GUID get_guid(const std::string& s_guid)
     {
@@ -18,7 +19,7 @@ namespace common
                  &guid.Data4[0],
                  &guid.Data4[1],
                  &guid.Data4[2],
-                 &guid.Data4[3],
+                 &guid.Data4[3], 
                  &guid.Data4[4],
                  &guid.Data4[5],
                  &guid.Data4[6],

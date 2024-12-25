@@ -4,6 +4,7 @@
 #include "global_variables.h"
 #include <fmod/fmod_errors.h>
 #include "common.h"
+#include <fmod/fmod_dsp_effects.h>
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 using namespace global_variables::cvar;
@@ -43,6 +44,7 @@ bool fmod_manager::load_bank(const std::filesystem::path& plugin_files_dir, std:
         scs_log_(2, ss.str().c_str());
         return false;
     }
+
     selected_bank_names_.push_back(bank_name);
     fmod_bank_map_[bank_name] = bank;
     std::stringstream ss;
@@ -54,18 +56,30 @@ bool fmod_manager::load_bank(const std::filesystem::path& plugin_files_dir, std:
 
 bool fmod_manager::unload_bank(std::string bank_name)
 {
+    scs_log_(0, ("Unloading bank: " + bank_name).c_str());
     auto bank = get_bank(bank_name.c_str());
-    if (bank == nullptr) { scs_log_(1, "1"); return false; }
+    if (bank == nullptr) 
+    { 
+        scs_log_(2, "Bank not found!");
+        return false;
+    }
+
+    scs_log_(0, "Bank found");
 
     auto it = std::find(selected_bank_names_.begin(), selected_bank_names_.end(), bank_name);
     selected_bank_names_.erase(it);
+
+    auto itt = fmod_bank_map_.find(bank_name);
+    if (itt != fmod_bank_map_.end()) {
+        fmod_bank_map_.erase(itt);
+    }
 
     auto guids_file_path = fs::current_path().append("plugins/ts-fmod-plugin-v2");
     guids_file_path.append(bank_name).concat(".bank.guids");
 
     std::ifstream guids_file(guids_file_path);
     std::string s_guid, channel_path;
-    if (!guids_file.is_open()) { scs_log_(1, "2"); return false; }
+    if (!guids_file.is_open()) { return false; }
 
     while (guids_file >> s_guid >> channel_path)
     {
@@ -89,11 +103,33 @@ bool fmod_manager::unload_bank(std::string bank_name)
 
     guids_file.close();
     bank->unload();
+    scs_log_(0, "Bank unloaded");
     return true;
 }
 
+json selectedBankJson = nullptr;
 bool fmod_manager::load_truck_banks(const std::filesystem::path& plugin_files_dir, std::string truckToLoad, std::string truckToUnLoad)
 {
+    if (selectedBankJson != nullptr)
+    {
+        for (json truck : selectedBankJson["trucks"])
+        {
+            if (truck.value("name", "") == truckToUnLoad.c_str())
+            {
+                for (std::string bank_name : truck["files"])
+                {
+                    size_t pos = bank_name.find(".bank");
+                    if (pos != std::string::npos) {
+                        bank_name.replace(pos, std::string::npos, "");
+                    }
+
+                    unload_bank(bank_name);
+                }
+            }
+        }
+    }
+
+
     auto selected_bank_file_path = plugin_files_dir;
     selected_bank_file_path.append("vehicle_sounds.json");
 
@@ -110,26 +146,9 @@ bool fmod_manager::load_truck_banks(const std::filesystem::path& plugin_files_di
         return false;
     }
 
-    json root;
-    selected_bank_file >> root;
+    selected_bank_file >> selectedBankJson;
 
-    for (json truck : root["trucks"])
-    {
-        if (truck.value("name", "") == truckToUnLoad.c_str())
-        {
-            for (std::string bank_name : truck["files"])
-            {
-                size_t pos = bank_name.find(".bank");
-                if (pos != std::string::npos) {
-                    bank_name.replace(pos, std::string::npos, "");
-                }
-
-                unload_bank(bank_name);
-            }
-        }
-    }
-
-    for (json truck : root["trucks"])
+    for (json truck : selectedBankJson["trucks"])
     {
         if (truck.value("name", "") == truckToLoad)
         {
@@ -248,7 +267,7 @@ void fmod_manager::mute_game_audio()
         prism::cvar::set_value(s_truck_turbo_mute, "0");
     }
 
-    if (get_event("interior/blinker_off")) prism::cvar::set_value(s_interior_mute, "1");
+    if (get_event("interior/blinker_on")) prism::cvar::set_value(s_interior_mute, "1");
     else prism::cvar::set_value(s_interior_mute, "0");
 
     if (get_event("music/main_menu")) prism::cvar::set_value(s_ui_music_mute, "1");
@@ -316,6 +335,8 @@ bool fmod_manager::init(bool ETS2)
                  (std::string("[ts-fmod-plugin-v2] Could not load FMOD core system, ") + FMOD_ErrorString(res)).c_str());
         return false;
     }
+    core_system_->set3DSettings(1.0f, 1.0f, 1.0f);
+
     int driver_count;
     core_system_->getNumDrivers(&driver_count);
     if (res != FMOD_OK)
@@ -596,13 +617,39 @@ FMOD_RESULT fmod_manager::set_event_state(const char* event_name, const bool sta
     return state ? event->start() : event->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
 }
 
+FMOD_STUDIO_PLAYBACK_STATE fmod_manager::is_event_playing(const char* event_name)
+{
+    const auto event = get_event(event_name);
 
-void fmod_manager::set_camera_posrot(FMOD_3D_ATTRIBUTES* listener_attributes, FMOD_VECTOR* atten) {
+    FMOD_STUDIO_PLAYBACK_STATE playback_state;
+    event->get_playback_state(&playback_state);
 
-    system_->setListenerAttributes(0, listener_attributes, atten);
+    if (playback_state != FMOD_STUDIO_PLAYBACK_STOPPED) return FMOD_STUDIO_PLAYBACK_PLAYING;
+
+    return FMOD_STUDIO_PLAYBACK_STOPPED;
 }
 
-FMOD_RESULT fmod_manager::set_event_3d_posrot(const char* event_name, float pos_x, float pos_y, float pos_z, float pitch, float yaw, float roll) {
+void fmod_manager::set_listener_attributes(FMOD_VECTOR pos, FMOD_VECTOR vel, FMOD_VECTOR forward, FMOD_VECTOR up) 
+{
+   // FMOD_RESULT res = core_system_->set3DListenerAttributes(0, &pos, &vel, &forward, &up);
+
+    FMOD_3D_ATTRIBUTES listener_attributes = {};
+    listener_attributes.position = pos;
+    listener_attributes.forward = forward;
+    listener_attributes.up = up;
+    listener_attributes.velocity = vel;
+
+    FMOD_RESULT res = system_->setListenerAttributes(0, &listener_attributes);
+
+    if (res != FMOD_OK) 
+    {
+        scs_log_(0, "setListenerAttributes failed!");
+        scs_log_(0, FMOD_ErrorString(res));
+    }
+}
+
+FMOD_RESULT fmod_manager::set_event_3d_posrot(const char* event_name, float pos_x, float pos_y, float pos_z) {
+
     const auto event = get_event(event_name);
     if (event == nullptr) return FMOD_ERR_EVENT_NOTFOUND;
 
@@ -611,13 +658,14 @@ FMOD_RESULT fmod_manager::set_event_3d_posrot(const char* event_name, float pos_
     attributes.position.y = pos_y;
     attributes.position.z = pos_z;
 
-    attributes.forward = { 0.0f, 0.0f, 1.0f };
-    attributes.up = { 0.0f, 1.0f, 0.0f };
+    attributes.forward = { 0.427784f, -0.00240976f, 0.903878f };
+    attributes.up = { 0.00103086f, 0.999997f, 0.00217813f };
 
+  //  attributes.forward = { -0.335687, -0.148735, -0.930157 };
+  //  attributes.up = { -0.0504899, 0.988877, -0.139903 };
 
     return event->set_3d_attributes(attributes);
 }
-
 
 FMOD_RESULT fmod_manager::set_bus_volume(const char* bus_name, const float value)
 {
