@@ -52,6 +52,7 @@ public:
     FMOD_RESULT set_global_parameter(const char* param_name, float value) const;
     FMOD_RESULT set_event_parameter(const char* event_name, const char* param_name, float value);
     FMOD_RESULT set_event_state(const char* event_name, bool state, bool only_when_event_stopped = false);
+    FMOD_RESULT set_effect(const char* event_name, bool on);
     FMOD_STUDIO_PLAYBACK_STATE is_event_playing(const char* event_name);
     FMOD_RESULT set_event_3d_posrot(const char* event_name, float pos_x, float pos_y, float pos_z);
     FMOD_RESULT set_bus_volume(const char* bus_name, float value);

@@ -75,3 +75,9 @@ FMOD_RESULT fmod_event::set_3d_attributes(const FMOD_3D_ATTRIBUTES& attributes) 
     if (event_instance_ == nullptr) return FMOD_ERR_INVALID_HANDLE;
     return event_instance_->set3DAttributes(&attributes);
 }
+
+FMOD_RESULT fmod_event::get_channel_group(FMOD::ChannelGroup*& channelGroup) const
+{
+    if (event_instance_ == nullptr) return FMOD_ERR_INVALID_HANDLE;
+    return event_instance_->getChannelGroup(&channelGroup);
+}

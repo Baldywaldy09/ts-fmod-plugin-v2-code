@@ -261,16 +261,16 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     if (game_version != common::supported_game_version)
     {
         ss.str("");
-        ss << "[ts-fmod-plugin-v2] Detected game version 1." << game_version
-            << " while plugin is made for version 1." << common::supported_game_version <<
+        ss << "[ts-fmod-plugin-v2] Detected game version " << game_version
+            << " while plugin is made for version " << common::plugin_version <<
             ". The plugin will not load to prevent crashes.";
         scs_log(2, ss.str().c_str());
 
         HWND hwnd = GetForegroundWindow();
 
         std::wstringstream message;
-        message << L"Unsupported game version detected!\n\nExpected: ver " << common::plugin_version
-            << L"\nYou have: ver 1." << game_version
+        message << L"Unsupported game version detected!\n\nExpected Version: " << common::plugin_version
+            << L"\nYou have Version: 1." << game_version
             << L"\n\nWould you like to check for a avaliable update?";
 
         int result = MessageBoxW(NULL, message.str().c_str(), L"TS-FMOD-Plugin V2 / Improved", MB_YESNO | MB_ICONERROR | MB_TOPMOST);
@@ -318,28 +318,31 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 
     auto game_base = memory::get_game_base();
 
+
     scs_result_t cvar_result = prism::cvar::init(scs_log);
     if (cvar_result != SCS_RESULT_ok) return cvar_result;
 
-    s_master_volume = prism::cvar::get_pointer("s_master_volume");
-    s_truck_engine_volume = prism::cvar::get_pointer("s_truck_engine_volume");
-    s_truck_engine_mute = prism::cvar::get_pointer("s_truck_engine_mute");
-    s_truck_exhaust_volume = prism::cvar::get_pointer("s_truck_exhaust_volume");
-    s_truck_exhaust_mute = prism::cvar::get_pointer("s_truck_exhaust_mute");
-    s_truck_turbo_volume = prism::cvar::get_pointer("s_truck_turbo_volume");
-    s_truck_turbo_mute = prism::cvar::get_pointer("s_truck_turbo_mute");
-    s_truck_effects_volume = prism::cvar::get_pointer("s_truck_effects_volume");
-    s_interior_volume = prism::cvar::get_pointer("s_interior_volume");
-    s_interior_mute = prism::cvar::get_pointer("s_interior_mute");
-    s_ui_music_volume = prism::cvar::get_pointer("s_ui_music_volume");
-    s_ui_music_mute = prism::cvar::get_pointer("s_ui_music_mute");
-    s_navigation_volume = prism::cvar::get_pointer("s_navigation_volume");
-    s_navigation_mute = prism::cvar::get_pointer("s_navigation_mute");
-    g_voice_navigation = prism::cvar::get_pointer("g_voice_navigation");
+
+    s_master_volume         = prism::cvar::get_pointer("s_master_volume");
+    s_truck_engine_volume   = prism::cvar::get_pointer("s_truck_engine_volume");
+    s_truck_engine_mute     = prism::cvar::get_pointer("s_truck_engine_mute");
+    s_truck_exhaust_volume  = prism::cvar::get_pointer("s_truck_exhaust_volume");
+    s_truck_exhaust_mute    = prism::cvar::get_pointer("s_truck_exhaust_mute");
+    s_truck_turbo_volume    = prism::cvar::get_pointer("s_truck_turbo_volume");
+    s_truck_turbo_mute      = prism::cvar::get_pointer("s_truck_turbo_mute");
+    s_truck_effects_volume  = prism::cvar::get_pointer("s_truck_effects_volume");
+    s_interior_volume       = prism::cvar::get_pointer("s_interior_volume");
+    s_interior_mute         = prism::cvar::get_pointer("s_interior_mute");
+    s_ui_music_volume       = prism::cvar::get_pointer("s_ui_music_volume");
+    s_ui_music_mute         = prism::cvar::get_pointer("s_ui_music_mute");
+    s_navigation_volume     = prism::cvar::get_pointer("s_navigation_volume");
+    s_navigation_mute       = prism::cvar::get_pointer("s_navigation_mute");
+    g_voice_navigation      = prism::cvar::get_pointer("g_voice_navigation");
     g_voice_navigation_pack = prism::cvar::get_pointer("g_voice_navigation_pack");
-    g_hardcore_simulation = prism::cvar::get_pointer("g_hardcore_simulation");
-    s_reverse_enabled = prism::cvar::get_pointer("s_reverse_enabled");
-    s_suspend_sound = prism::cvar::get_pointer("s_suspend_sound");
+    g_hardcore_simulation   = prism::cvar::get_pointer("g_hardcore_simulation");
+    s_reverse_enabled       = prism::cvar::get_pointer("s_reverse_enabled");
+    s_suspend_sound         = prism::cvar::get_pointer("s_suspend_sound");
+
 
     // BASE_CTRL
     const auto base_ctrl_instruction = memory::get_address_from_pattern("48 8b 05 ?? ?? ?? ?? 48 8b 4b ?? 48 8b 80 ?? ?? ?? ?? 48 8b b9");
@@ -350,6 +353,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     }
     auto base_ctrl_ptr = base_ctrl_instruction + *reinterpret_cast<uint32_t*>(base_ctrl_instruction + 3) + 7;
     // End //
+
 
     // GAME_ACTOR
     const auto game_actor_offset_instruction = memory::get_address_from_pattern("48 8B 80 ?? ?? 00 00 48 8B B9 ?? ?? 00 00 48 85 C0");
@@ -367,6 +371,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     uint32_t game_actor_offset = static_cast<uint32_t>(std::stoul(game_actor_offset_str, nullptr, 16));
     // End //
 
+
     // UNK_INTERIOR
     const auto unk_interior_instruction = memory::get_address_from_pattern("48 8B 3D ?? ?? ?? ?? 38 87 ?? ?? 00 00");
     if (unk_interior_instruction == NULL)
@@ -377,8 +382,14 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     auto unk_interior_ptr = (unk_interior_instruction + 7) + *reinterpret_cast<int32_t*>(unk_interior_instruction + 3);
     // End //
 
+
     // Base camera address
     const auto core_camera_instruction = memory::get_address_from_pattern("48 8B 05 ?? ?? ?? ?? 0F 5B ?? 66 0F 6E ?? F3 ?? ?? ?? ??");
+    if (core_camera_instruction == NULL)
+    {
+        scs_log(2, "[ts-fmod-plugin-v2] Unable to find core_camera pointer offset");
+        return SCS_RESULT_generic_error;
+    }
     auto core_camera_ptr = core_camera_instruction + *reinterpret_cast<int32_t*>(core_camera_instruction + 3) + 7;
 
     ss.str("");
@@ -388,6 +399,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
         << "', core_camera: 'game_base+" << core_camera_instruction << "'";
     scs_log(SCS_LOG_TYPE_message, ss.str().c_str());
     // End //
+
 
     // Start FMOD
     std::string fullGameName = version_params->common.game_name;

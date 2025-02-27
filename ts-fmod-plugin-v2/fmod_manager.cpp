@@ -321,7 +321,7 @@ bool fmod_manager::init(bool ETS2)
                  (std::string("[ts-fmod-plugin-v2] Could not create FMOD system, ") + FMOD_ErrorString(res)).c_str());
         return false;
     }
-    res = system_->initialize(64, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr);
+    res = system_->initialize(64, 0, 40, nullptr);
     if (res != FMOD_OK)
     {
         scs_log_(2,
@@ -615,6 +615,68 @@ FMOD_RESULT fmod_manager::set_event_state(const char* event_name, const bool sta
     if (playback_state != FMOD_STUDIO_PLAYBACK_STOPPED && only_when_event_stopped) return FMOD_ERR_EVENT_ALREADY_LOADED;
 
     return state ? event->start() : event->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT);
+}
+
+static bool last_state = false;
+FMOD_RESULT fmod_manager::set_effect(const char* event_name, bool on)
+{
+    const auto event = get_event(event_name);
+    if (event == nullptr) return FMOD_ERR_EVENT_NOTFOUND;
+    if (last_state == on) return FMOD_OK;
+
+    last_state = on;
+
+    FMOD::ChannelGroup* channel_group = nullptr;
+    event->get_channel_group(channel_group);
+
+    if (channel_group) {
+        if (on)
+        {
+            FMOD::DSP* lowpass_dsp = nullptr;
+            core_system_->createDSPByType(FMOD_DSP_TYPE_LOWPASS, &lowpass_dsp);
+
+            FMOD::DSP* eq_dsp = nullptr;
+            core_system_->createDSPByType(FMOD_DSP_TYPE_PARAMEQ, &eq_dsp);
+            eq_dsp->setParameterFloat(FMOD_DSP_PARAMEQ_CENTER, 100.0f);  // Boost around 100 Hz
+            eq_dsp->setParameterFloat(FMOD_DSP_PARAMEQ_GAIN, 2.0f);      // Increase bass
+            eq_dsp->setParameterFloat(FMOD_DSP_PARAMEQ_BANDWIDTH, 2.0f); // Wide bandwidth
+
+
+            channel_group->addDSP(0, eq_dsp);
+            channel_group->addDSP(0, lowpass_dsp);
+
+            float lowpassValue = 0.3f;
+            channel_group->setLowPassGain(lowpassValue);
+        }
+
+        else 
+        {
+            FMOD::DSP* eq_dsp = nullptr;
+            FMOD::DSP* lowpass_dsp = nullptr;
+
+            int num_dsps = 0;
+            channel_group->getNumDSPs(&num_dsps);
+
+            for (int i = 0; i < num_dsps; ++i)
+            {
+                FMOD::DSP* dsp = nullptr;
+                channel_group->getDSP(i, &dsp);
+
+                FMOD_DSP_TYPE dsp_type;
+                dsp->getType(&dsp_type);
+
+                if (dsp_type == FMOD_DSP_TYPE_PARAMEQ) eq_dsp = dsp;
+                else if (dsp_type == FMOD_DSP_TYPE_LOWPASS) lowpass_dsp = dsp;
+
+                channel_group->removeDSP(dsp);
+            }
+
+            if (eq_dsp) eq_dsp->release();
+            if (lowpass_dsp) lowpass_dsp->release();
+
+            channel_group->setLowPassGain(1.0f);
+        }
+    }
 }
 
 FMOD_STUDIO_PLAYBACK_STATE fmod_manager::is_event_playing(const char* event_name)

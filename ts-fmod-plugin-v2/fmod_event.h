@@ -22,4 +22,5 @@ public:
     FMOD_RESULT set_volume(float value) const;
     FMOD_RESULT get_playback_state(FMOD_STUDIO_PLAYBACK_STATE* state) const;
     FMOD_RESULT set_3d_attributes(const FMOD_3D_ATTRIBUTES& attributes) const;
+    FMOD_RESULT get_channel_group(FMOD::ChannelGroup*& channelGroup) const;
 };

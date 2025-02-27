@@ -4,6 +4,7 @@
 #include "common.h"
 #include "memory.h"
 #include "prism/sound.h"
+#include <fmod/fmod_errors.h>
 
 struct Vector3 {
     float x;
@@ -250,6 +251,7 @@ void handle_volume(telemetry_data_t* telemetry_data)
     }
 }
 
+bool engine_failed = false;
 void handle_engine(telemetry_data_t* telemetry_data)
 {
     fmod_manager_instance_->set_global_parameter("trans_rpm", telemetry_data->truck.engine_rpm);
@@ -281,10 +283,10 @@ void handle_engine(telemetry_data_t* telemetry_data)
 
                 fmod_manager_instance_->set_event_parameter("engine/engine", "play", 1);
                 fmod_manager_instance_->set_event_parameter("engine/exhaust", "play", 1);
+                fmod_manager_instance_->set_event_parameter("engine/turbo", "play", 1);
+
                 fmod_manager_instance_->set_event_state("engine/engine", true);
                 fmod_manager_instance_->set_event_state("engine/exhaust", true);
-
-                fmod_manager_instance_->set_event_parameter("engine/turbo", "play", 1);
                 fmod_manager_instance_->set_event_state("engine/turbo", true);
 
                 start_bad = false;
@@ -295,10 +297,24 @@ void handle_engine(telemetry_data_t* telemetry_data)
                 fmod_manager_instance_->set_event_parameter("engine/engine", "play", 0);
                 fmod_manager_instance_->set_event_parameter("engine/exhaust", "play", 0);
                 fmod_manager_instance_->set_event_parameter("engine/turbo", "play", 0);
+
                 start_bad = false;
                 engineRunning = false;
             }
             stored_engine_state = engine_state;
+        }
+
+        if (engine_state == 2 && !engineRunning) {
+            scs_log__(2, "[ts-fmod-plugin-v2] Failed to start engine! Retrying..."); 
+            stored_engine_state = 0;
+
+            engine_failed = true;
+        }
+
+        if (engine_failed && engine_state == 2 && engineRunning)
+        { 
+            scs_log__(0, "[ts-fmod-plugin-v2] Retry successfull!");
+            engine_failed = false;
         }
 
         fmod_manager_instance_->set_event_parameter("engine/engine", "brake",
@@ -485,12 +501,34 @@ void handle_interior(telemetry_data_t* telemetry_data)
             fmod_manager_instance_->set_bus_volume("outside", finalVolume);
             fmod_manager_instance_->set_bus_volume("outside/exterior", finalVolume);
             fmod_manager_instance_->set_bus_volume("exterior", finalVolume);
+
+
+            fmod_manager_instance_->set_effect("engine/engine", true);
+            fmod_manager_instance_->set_effect("engine/exhaust", true);
+            fmod_manager_instance_->set_effect("engine/turbo", true);
+            fmod_manager_instance_->set_effect("engine/start_bad", true);
+            fmod_manager_instance_->set_effect("effects/gear_grind", true);
+            fmod_manager_instance_->set_effect("effects/gear_wrong", true);
+            fmod_manager_instance_->set_effect("effects/air_brake", true);
+            fmod_manager_instance_->set_effect("effects/hook_attach", true);
+            fmod_manager_instance_->set_effect("effects/hook_detach", true);
         }
         else
         { 
             fmod_manager_instance_->set_bus_volume("outside", 1);
             fmod_manager_instance_->set_bus_volume("outside/exterior", 1);
             fmod_manager_instance_->set_bus_volume("exterior", 1);
+
+
+            fmod_manager_instance_->set_effect("engine/engine", false);
+            fmod_manager_instance_->set_effect("engine/exhaust", false);
+            fmod_manager_instance_->set_effect("engine/turbo", false);
+            fmod_manager_instance_->set_effect("engine/start_bad", false);
+            fmod_manager_instance_->set_effect("effects/gear_grind", false);
+            fmod_manager_instance_->set_effect("effects/gear_wrong", false);
+            fmod_manager_instance_->set_effect("effects/air_brake", false);
+            fmod_manager_instance_->set_effect("effects/hook_attach", false);
+            fmod_manager_instance_->set_effect("effects/hook_detach", false);
         }
 
         if (interior->interior_camera)
