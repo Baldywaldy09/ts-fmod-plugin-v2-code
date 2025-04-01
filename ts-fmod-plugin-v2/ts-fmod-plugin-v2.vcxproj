@@ -187,25 +187,41 @@ copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\Steam
     <ClInclude Include="hooks\hook.h" />
     <ClInclude Include="hooks\sound.h" />
     <ClInclude Include="includes_windows.h" />
-    <ClInclude Include="memory.h" />
-    <ClInclude Include="memory_structure.h" />
-    <ClInclude Include="prism\cvar.h" />
-    <ClInclude Include="prism\sound.h" />
-    <ClInclude Include="prism\string.h" />
-    <ClInclude Include="prism\token.h" />
+    <ClInclude Include="bmem.h" />
+    <ClInclude Include="prism\actors\game_actor.h" />
+    <ClInclude Include="prism\actors\game_ctrl.h" />
+    <ClInclude Include="prism\actors\game_sound_data.h" />
+    <ClInclude Include="prism\common\arrays.h" />
+    <ClInclude Include="prism\common\pointers.h" />
+    <ClInclude Include="prism\common\strings.h" />
+    <ClInclude Include="prism\common\unit.h" />
+    <ClInclude Include="prism\common\vectors.h" />
+    <ClInclude Include="prism\pointer_base\pointer_base.h" />
+    <ClInclude Include="prism\prism.h" />
+    <ClInclude Include="prism\sound\fmod.h" />
+    <ClInclude Include="prism\sound\navigation.h" />
+    <ClInclude Include="prism\token\token.h" />
+    <ClInclude Include="prism\ui\classes.h" />
+    <ClInclude Include="prism\ui\functions.h" />
+    <ClInclude Include="prism\ui\ui.h" />
+    <ClInclude Include="prism\__patterns.h" />
+    <ClInclude Include="prism_cvar\cvar.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sdk_stores.h" />
     <ClInclude Include="telemetry_data.h" />
     <ClInclude Include="tick.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bsettings.cpp" />
     <ClCompile Include="hooks_core.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fmod_event.cpp" />
     <ClCompile Include="fmod_manager.cpp" />
     <ClCompile Include="hooks\hook.cpp" />
     <ClCompile Include="hooks\sound.cpp" />
-    <ClCompile Include="prism\cvar.cpp" />
+    <ClCompile Include="prism\prism.cpp" />
+    <ClCompile Include="prism\token\token.cpp" />
+    <ClCompile Include="prism_cvar\cvar.cpp" />
     <ClCompile Include="tick.cpp" />
   </ItemGroup>
   <ItemGroup>

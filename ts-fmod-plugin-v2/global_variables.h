@@ -1,14 +1,9 @@
 #pragma once
-#include "prism/cvar.h"
-#include "memory_structure.h"
+#include "prism_cvar/cvar.h"
+#include "prism/prism.h"
 
 namespace global_variables
 {
-    namespace memory
-    {
-        inline game_actor_u* game_actor;
-    }
-
     namespace audio
     {
         inline float current_master_volume = 0.f;
@@ -74,5 +69,7 @@ namespace global_variables
         inline bool paused = true;
         inline bool engineRunning = false;
         inline int lastGear = 0;
+        inline bool wipers_moving_up = false;
+        inline bool wipers_moving_down = false;
     };
 };

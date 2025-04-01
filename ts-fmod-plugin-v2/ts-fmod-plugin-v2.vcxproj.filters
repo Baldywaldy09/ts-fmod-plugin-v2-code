@@ -21,11 +21,38 @@
     <Filter Include="Source Files\root">
       <UniqueIdentifier>{6c8591b0-a006-4e67-97f3-de21e80e542e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\prism">
-      <UniqueIdentifier>{e13ea3e3-63e0-4095-8c3d-b4f5b1f05a76}</UniqueIdentifier>
+    <Filter Include="Header Files\prism_cvar">
+      <UniqueIdentifier>{06ec0bf6-b131-40c3-aa91-e104be32b691}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prism_cvar">
+      <UniqueIdentifier>{72b0f731-20b2-4e2a-9a4b-2a9c4870a279}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\prism">
-      <UniqueIdentifier>{d792ab56-6d09-48fe-be68-721e46631810}</UniqueIdentifier>
+      <UniqueIdentifier>{8f71d9f9-fbba-478c-a261-c351b67dc78c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prism\token">
+      <UniqueIdentifier>{a2c8bb08-bdb0-4837-924e-9407041bb517}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism">
+      <UniqueIdentifier>{d3d0be15-6f65-417b-8fb7-77be4b5a99c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism\ui">
+      <UniqueIdentifier>{7e6ff916-c015-478b-aa13-6fd22b620f78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism\common">
+      <UniqueIdentifier>{66159e23-d79e-4401-9a78-b52403c1f6e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism\token">
+      <UniqueIdentifier>{a1c86e0d-1e60-4754-a338-20ff71e195a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism\sound">
+      <UniqueIdentifier>{f90bc536-3976-4cb7-8004-8c5b40f26d22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism\pointer_base">
+      <UniqueIdentifier>{8e0c0f69-9307-4fc7-b9c8-6cc248076c2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prism\actors">
+      <UniqueIdentifier>{aaef0676-6b06-41be-bcb0-2a790e823bc4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -50,10 +77,7 @@
     <ClInclude Include="global_variables.h">
       <Filter>Header Files\root</Filter>
     </ClInclude>
-    <ClInclude Include="memory.h">
-      <Filter>Header Files\root</Filter>
-    </ClInclude>
-    <ClInclude Include="memory_structure.h">
+    <ClInclude Include="bmem.h">
       <Filter>Header Files\root</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
@@ -65,23 +89,65 @@
     <ClInclude Include="telemetry_data.h">
       <Filter>Header Files\root</Filter>
     </ClInclude>
-    <ClInclude Include="prism\string.h">
-      <Filter>Header Files\prism</Filter>
-    </ClInclude>
-    <ClInclude Include="prism\token.h">
-      <Filter>Header Files\prism</Filter>
-    </ClInclude>
-    <ClInclude Include="prism\sound.h">
-      <Filter>Header Files\prism</Filter>
-    </ClInclude>
-    <ClInclude Include="prism\cvar.h">
-      <Filter>Header Files\prism</Filter>
-    </ClInclude>
     <ClInclude Include="includes_windows.h">
       <Filter>Header Files\root</Filter>
     </ClInclude>
     <ClInclude Include="tick.h">
       <Filter>Header Files\root</Filter>
+    </ClInclude>
+    <ClInclude Include="prism_cvar\cvar.h">
+      <Filter>Header Files\prism_cvar</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\prism.h">
+      <Filter>Header Files\prism</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\__patterns.h">
+      <Filter>Header Files\prism</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\ui\ui.h">
+      <Filter>Header Files\prism\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\ui\classes.h">
+      <Filter>Header Files\prism\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\ui\functions.h">
+      <Filter>Header Files\prism\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\common\unit.h">
+      <Filter>Header Files\prism\common</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\common\vectors.h">
+      <Filter>Header Files\prism\common</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\common\arrays.h">
+      <Filter>Header Files\prism\common</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\common\pointers.h">
+      <Filter>Header Files\prism\common</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\common\strings.h">
+      <Filter>Header Files\prism\common</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\token\token.h">
+      <Filter>Header Files\prism\token</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\sound\navigation.h">
+      <Filter>Header Files\prism\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\sound\fmod.h">
+      <Filter>Header Files\prism\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\pointer_base\pointer_base.h">
+      <Filter>Header Files\prism\pointer_base</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\actors\game_sound_data.h">
+      <Filter>Header Files\prism\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\actors\game_actor.h">
+      <Filter>Header Files\prism\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\actors\game_ctrl.h">
+      <Filter>Header Files\prism\actors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -103,10 +169,19 @@
     <ClCompile Include="fmod_manager.cpp">
       <Filter>Source Files\root</Filter>
     </ClCompile>
-    <ClCompile Include="prism\cvar.cpp">
+    <ClCompile Include="tick.cpp">
+      <Filter>Source Files\root</Filter>
+    </ClCompile>
+    <ClCompile Include="prism_cvar\cvar.cpp">
+      <Filter>Source Files\prism_cvar</Filter>
+    </ClCompile>
+    <ClCompile Include="prism\prism.cpp">
       <Filter>Source Files\prism</Filter>
     </ClCompile>
-    <ClCompile Include="tick.cpp">
+    <ClCompile Include="prism\token\token.cpp">
+      <Filter>Source Files\prism\token</Filter>
+    </ClCompile>
+    <ClCompile Include="bsettings.cpp">
       <Filter>Source Files\root</Filter>
     </ClCompile>
   </ItemGroup>

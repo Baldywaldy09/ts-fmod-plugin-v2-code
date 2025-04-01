@@ -24,10 +24,7 @@ void hooks_core::tick()
 
 bool hooks_core::init()
 {
-    if (MH_Initialize() != MH_OK)
-    {
-        return false;
-    }
+    MH_Initialize();
 
     const auto sound_hook = new hooks::sound();
 

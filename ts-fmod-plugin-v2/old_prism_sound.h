@@ -1,7 +1,6 @@
 #pragma once
 
-#include "token.h"
-#include "string.h"
+
 
 namespace prism
 {
@@ -11,15 +10,6 @@ namespace prism
         string_dyn_t bank_path; // 0x0010 (0x18)
 
         virtual void func_0();
-    };
-
-    typedef struct fmod_parameter_t
-    {                                 // linked list ?
-        fmod_parameter_t* parameter;   // 0x0000 (0x08)
-        fmod_parameter_t* parameter_2; // 0x0008 (0x08)
-        token_t name;                 // 0x0010 (0x08)
-        float value;                  // 0x0018 (0x04)
-        char pad_001C[20];            // 0x001C (0x14)
     };
 
     typedef struct PRISMFMOD_3D_ATTRIBUTES

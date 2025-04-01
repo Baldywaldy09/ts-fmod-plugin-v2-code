@@ -15,6 +15,9 @@
 #include <windows.h>
 #include <shellapi.h>
 
+#include "prism/prism.h"
+#include "prism_cvar/cvar.h"
+
 namespace fs = std::filesystem;
 
 using namespace global_variables::audio;
@@ -292,7 +295,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 
         if (outfile.is_open())
         {
-            outfile << common::plugin_version << ".1";
+            outfile << common::plugin_version;
             outfile.close();
         }
         else {
@@ -304,7 +307,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
         std::ofstream outfile(versionTXT, std::ios::trunc); // std::ios::trunc clears the file content
         if (outfile.is_open())
         {
-            outfile << common::plugin_version << ".1";
+            outfile << common::plugin_version;
             outfile.close();
         }
         else
@@ -316,12 +319,8 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     // Find Memory + cvar pointers
     scs_log(0, "[ts-fmod-plugin-v2] Searching memory... If this is one of the last messages in the log after a crash, try disabling this plugin.");
 
-    auto game_base = memory::get_game_base();
-
-
     scs_result_t cvar_result = prism::cvar::init(scs_log);
     if (cvar_result != SCS_RESULT_ok) return cvar_result;
-
 
     s_master_volume         = prism::cvar::get_pointer("s_master_volume");
     s_truck_engine_volume   = prism::cvar::get_pointer("s_truck_engine_volume");
@@ -344,60 +343,13 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     s_suspend_sound         = prism::cvar::get_pointer("s_suspend_sound");
 
 
-    // BASE_CTRL
-    const auto base_ctrl_instruction = memory::get_address_from_pattern("48 8b 05 ?? ?? ?? ?? 48 8b 4b ?? 48 8b 80 ?? ?? ?? ?? 48 8b b9");
-    if (base_ctrl_instruction == NULL)
-    {
-        scs_log(2, "[ts-fmod-plugin-v2] Unable to find base_ctrl pointer offset");
-        return SCS_RESULT_generic_error;
-    }
-    auto base_ctrl_ptr = base_ctrl_instruction + *reinterpret_cast<uint32_t*>(base_ctrl_instruction + 3) + 7;
-    // End //
-
-
-    // GAME_ACTOR
-    const auto game_actor_offset_instruction = memory::get_address_from_pattern("48 8B 80 ?? ?? 00 00 48 8B B9 ?? ?? 00 00 48 85 C0");
-    if (game_actor_offset_instruction == NULL)
-    {
-        scs_log(2, "[ts-fmod-plugin-v2] Unable to find game_actor_offset instruction");
-        return SCS_RESULT_generic_error;
-    }
-    const uint8_t first_byte = *reinterpret_cast<uint8_t*>(game_actor_offset_instruction + 0x3);
-    const uint8_t second_byte = *reinterpret_cast<uint8_t*>(game_actor_offset_instruction + 0x4);
-
-    std::string firstByte = common::byteToString(first_byte);
-    std::string secondByte = common::byteToString(second_byte);
-    std::string game_actor_offset_str = secondByte + firstByte;
-    uint32_t game_actor_offset = static_cast<uint32_t>(std::stoul(game_actor_offset_str, nullptr, 16));
-    // End //
-
-
-    // UNK_INTERIOR
-    const auto unk_interior_instruction = memory::get_address_from_pattern("48 8B 3D ?? ?? ?? ?? 38 87 ?? ?? 00 00");
-    if (unk_interior_instruction == NULL)
-    {
-        scs_log(2, "[ts-fmod-plugin-v2] Unable to find unk_interior pointer offset");
-        return SCS_RESULT_generic_error;
-    }
-    auto unk_interior_ptr = (unk_interior_instruction + 7) + *reinterpret_cast<int32_t*>(unk_interior_instruction + 3);
-    // End //
-
-
-    // Base camera address
-    const auto core_camera_instruction = memory::get_address_from_pattern("48 8B 05 ?? ?? ?? ?? 0F 5B ?? 66 0F 6E ?? F3 ?? ?? ?? ??");
-    if (core_camera_instruction == NULL)
-    {
-        scs_log(2, "[ts-fmod-plugin-v2] Unable to find core_camera pointer offset");
-        return SCS_RESULT_generic_error;
-    }
-    auto core_camera_ptr = core_camera_instruction + *reinterpret_cast<int32_t*>(core_camera_instruction + 3) + 7;
-
-    ss.str("");
-    ss << "[ts-fmod-plugin-v2] Found base_ctrl: 'game_base+" << std::hex << base_ctrl_instruction
-        << "', game_actor: 'game_base+" << base_ctrl_instruction << "+" << game_actor_offset
-        << "', unk_interior: 'game_base+" << unk_interior_instruction
-        << "', core_camera: 'game_base+" << core_camera_instruction << "'";
-    scs_log(SCS_LOG_TYPE_message, ss.str().c_str());
+    prism::initialization::init_functions(
+        prism::initialization::error_level_enum::hault,
+        prism::initialization::log_destination_enum::local_file,
+        true,
+        true,
+        "ts-fmod-plugin-v2"
+    );
     // End //
 
 
@@ -443,7 +395,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 
     // Start Tick:
     scs_log(0, "[ts-fmod-plugin-v2] Starting tick function... If this is one of the last messages in the log after a crash, try disabling this plugin.");
-    tick::init_tick(scs_log, fmod_manager_instance, game_base, base_ctrl_ptr, unk_interior_ptr, game_actor_offset, core_camera_ptr);
+    tick::init_tick(scs_log, fmod_manager_instance);
     scs_log(0, "[ts-fmod-plugin-v2] Started tick function");
 
 
