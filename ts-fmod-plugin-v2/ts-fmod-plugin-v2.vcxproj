@@ -138,7 +138,8 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <ModuleDefinitionFile>$(solutiondir)ts-fmod-plugin-v2.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
       <AdditionalDependencies>$(solutiondir)lib/fmod_vc.lib;$(solutiondir)lib/fmodstudio_vc.lib;$(solutiondir)lib/minhook.x64.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -200,10 +201,12 @@ copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\Steam
     <ClInclude Include="prism\prism.h" />
     <ClInclude Include="prism\sound\fmod.h" />
     <ClInclude Include="prism\sound\navigation.h" />
+    <ClInclude Include="prism\sound\sound_event.h" />
     <ClInclude Include="prism\token\token.h" />
     <ClInclude Include="prism\ui\classes.h" />
     <ClInclude Include="prism\ui\functions.h" />
     <ClInclude Include="prism\ui\ui.h" />
+    <ClInclude Include="prism\vehicle_camera\vehicle_behind_rotation_camera.h" />
     <ClInclude Include="prism\__patterns.h" />
     <ClInclude Include="prism_cvar\cvar.h" />
     <ClInclude Include="resource.h" />

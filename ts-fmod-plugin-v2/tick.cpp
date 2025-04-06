@@ -37,6 +37,7 @@ void tick::init_tick(scs_log_t scs_log, fmod_manager* fmod_manager_instance)
 void handle_volume(telemetry_data_t* telemetry_data)
 {
     // Background Audio:
+    
     int suspend_sound = prism::cvar::get_value(s_suspend_sound);
     if (suspend_sound == 1)
     {
@@ -47,7 +48,10 @@ void handle_volume(telemetry_data_t* telemetry_data)
         DWORD current_app_processId;
         GetWindowThreadProcessId(hwnd, &current_app_processId);
 
-        if (game_processID != current_app_processId) fmod_manager_instance_->set_minimised(true);
+        if (game_processID != current_app_processId) {
+            fmod_manager_instance_->set_minimised(true);
+            return;
+        }
         else fmod_manager_instance_->set_minimised(false);
     }
     else fmod_manager_instance_->set_minimised(false);
@@ -63,6 +67,15 @@ void handle_volume(telemetry_data_t* telemetry_data)
     const float effects_volume = prism::cvar::get_value(s_truck_effects_volume);
     const float interior_volume = prism::cvar::get_value(s_interior_volume);
 
+    fmod_manager_instance_->set_bus_volume("", master_volume);
+    fmod_manager_instance_->set_bus_volume("game/navigation", navigation_volume);
+    fmod_manager_instance_->set_bus_volume("game/ui_music", music_volume);
+    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_engine", engine_volume);
+    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_turbo", turbo_volume);
+    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_exhaust", exhaust_volume);
+    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_effects", effects_volume);
+    fmod_manager_instance_->set_bus_volume("cabin/interior", interior_volume);
+
     std::stringstream ss;
     std::ostringstream volume_stream;
         
@@ -75,7 +88,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting master volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("", master_volume);
         current_master_volume = master_volume;
     }
 
@@ -88,7 +100,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting navigation volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("game/navigation", navigation_volume);
         current_navigation_volume = navigation_volume;
     }
 
@@ -101,7 +112,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting menu music volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("game/ui_music", music_volume);
         current_music_volume = music_volume;
     }
 
@@ -114,7 +124,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting engine volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("outside/exterior/truck_engine", engine_volume);
         current_engine_volume = engine_volume;
     }
 
@@ -127,7 +136,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting turbo volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("outside/exterior/truck_turbo", turbo_volume);
         current_turbo_volume = turbo_volume;
     }
 
@@ -140,7 +148,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting exhaust volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("outside/exterior/truck_exhaust", exhaust_volume);
         current_exhaust_volume = exhaust_volume;
     }
 
@@ -153,7 +160,6 @@ void handle_volume(telemetry_data_t* telemetry_data)
         ss << "[ts-fmod-plugin-v2] Setting effects volume to: " << volume_stream.str();
         scs_log__(0, ss.str().c_str());
 
-        fmod_manager_instance_->set_bus_volume("outside/exterior/truck_effects", effects_volume);
         current_effects_volume = effects_volume;
     }
 
@@ -170,76 +176,71 @@ void handle_volume(telemetry_data_t* telemetry_data)
         current_interior_volume = interior_volume;
     }
 
-    prism::game_sound_data_u* sound_data = prism::pointer_base->game_sound_data ? prism::pointer_base->game_sound_data : nullptr;
-    if (sound_data != nullptr)
+    if (prism::pointer_base && prism::pointer_base->camera_manager)
     {
-        std::stringstream campos;
-        campos << "Camera position x: " << telemetry_data->truck.head_offset.position.x << ", y: " << telemetry_data->truck.head_offset.position.y << ", z: " << telemetry_data->truck.head_offset.position.z;
-      //  scs_log__(0, campos.str().c_str());
-
-        std::stringstream truckpos;
-        truckpos << "Truck position x: " << telemetry_data->truck.world_placement.position.x << ", y: " << telemetry_data->truck.world_placement.position.y << ", z: " << telemetry_data->truck.world_placement.position.z;
-     //   scs_log__(0, truckpos.str().c_str());
-    }
-
-    /*
-    if (game_actor != nullptr)
-    {
-        if (core_camera->vehicle_camera != nullptr)
+        if (prism::pointer_base->camera_manager->current_camera == 1 && !paused)
         {
-            if (core_camera->vehicle_camera->chase != nullptr)
+            prism::vehicle_behind_rotation_camera* chase_camera = nullptr;
+
+            if (prism::pointer_base->camera_manager->vehicle_cameras.has_index(1)) 
             {
-                if (game_actor->current_camera == 1 && !paused)
+                chase_camera = (prism::vehicle_behind_rotation_camera*)prism::pointer_base->camera_manager->vehicle_cameras[1];
+
+                if (std::string(chase_camera->get_unit_descriptor()->string->value) != "vehicle_behind_rotation_camera")
                 {
-                    float engine_volume_distance = engine_volume;
-                    float turbo_volume_distance = turbo_volume;
-                    float exhaust_volume_distance = exhaust_volume;
-                    float effects_volume_distance = effects_volume;
+                    scs_log__(2, "[ts-fmod-plugin-v2][Prism3D] prism::pointer_base->camera_manager->vehicle_cameras[1] returned a invalid camera type!");
+                    
 
-                    float distance_from_truck = core_camera->vehicle_camera->chase->distance;
-                    float min_distance = 4.0f;
+                    std::string got = std::string(chase_camera->get_unit_descriptor()->string->value);
+                    scs_log__(2, ("[ts-fmod-plugin-v2][Prism3D] -> Got: 'prism::" + got + "' expected: 'prism::vehicle_behind_rotation_camera'").c_str());
+                
+                    chase_camera = nullptr;
+                }
+            }
 
-                    auto adjust_volume = [&](float& volume_distance, float scaling_factor) {
-                        if (volume_distance > 0) {
-                            float factor = min_distance / distance_from_truck;
-                            volume_distance *= 1 + (factor - 1) * scaling_factor;
-                        }
-                        else {
-                            volume_distance = 0;
-                        }
+            if (chase_camera)
+            {
+                float engine_volume_distance = engine_volume;
+                float turbo_volume_distance = turbo_volume;
+                float exhaust_volume_distance = exhaust_volume;
+                float effects_volume_distance = effects_volume;
 
-                        if (volume_distance < 0) { volume_distance = 0; }
-                    };
+                float distance_from_truck = chase_camera->distance_from_root;
+                float min_distance = 4.0f;
 
-                    if (distance_from_truck != min_distance) {
-                        adjust_volume(engine_volume_distance, 0.55);
-                        adjust_volume(turbo_volume_distance, 0.55);
-                        adjust_volume(exhaust_volume_distance, 0.55);
-                        adjust_volume(effects_volume_distance, 0.55);
+                auto adjust_volume = [&](float& volume_distance, float scaling_factor) {
+                    if (volume_distance > 0) {
+                        float factor = min_distance / distance_from_truck;
+                        volume_distance *= 1 + (factor - 1) * scaling_factor;
+                    }
+                    else {
+                        volume_distance = 0;
                     }
 
-                   // scs_log__(0, std::to_string(distance_from_truck).c_str());
-                   // scs_log__(0, std::to_string(engine_volume_distance).c_str());
+                    if (volume_distance < 0) { volume_distance = 0; }
+                };
 
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_engine", engine_volume_distance);
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_turbo", turbo_volume_distance);
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_exhaust", exhaust_volume_distance);
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_effects", effects_volume_distance);
+                if (distance_from_truck != min_distance) {
+                    adjust_volume(engine_volume_distance, 0.65);
+                    adjust_volume(turbo_volume_distance, 0.65);
+                    adjust_volume(exhaust_volume_distance, 0.65);
+                    adjust_volume(effects_volume_distance, 0.65);
                 }
-                else
-                {
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_engine", engine_volume);
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_turbo", turbo_volume);
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_exhaust", exhaust_volume);
-                    fmod_manager_instance_->set_bus_volume("outside/exterior/truck_effects", effects_volume);
-                }
+
+            //    scs_log__(0, std::to_string(distance_from_truck).c_str());
+            //    scs_log__(0, std::to_string(engine_volume_distance).c_str());
+
+                fmod_manager_instance_->set_bus_volume("outside/exterior/truck_engine", engine_volume_distance);
+                fmod_manager_instance_->set_bus_volume("outside/exterior/truck_turbo", turbo_volume_distance);
+                fmod_manager_instance_->set_bus_volume("outside/exterior/truck_exhaust", exhaust_volume_distance);
+                fmod_manager_instance_->set_bus_volume("outside/exterior/truck_effects", effects_volume_distance);
             }
         }
     }
-    */
 }
 
 bool engine_failed = false;
+int engineRetryCount = 0;
 void handle_engine(telemetry_data_t* telemetry_data)
 {
     fmod_manager_instance_->set_global_parameter("trans_rpm", telemetry_data->truck.engine_rpm);
@@ -442,23 +443,19 @@ void handle_interior(telemetry_data_t* telemetry_data)
 
             if (game_actor->left_window_state > 2 && game_actor->right_window_state < 2)
             {
-                scs_log__(0, "l window moving");
                 fmod_manager_instance_->set_event_3d_posrot("interior/window_move", -1.f, 0, 0);
             }
             else if (game_actor->right_window_state > 2 && game_actor->left_window_state < 2)
             {
-                scs_log__(0, "r window moving");
                 fmod_manager_instance_->set_event_3d_posrot("interior/window_move", 1.f, 0, 0);
             }
             else
             {
-                scs_log__(0, "both windows moving");
                 fmod_manager_instance_->set_event_3d_posrot("interior/window_move", 0, 0, 0);
             }
         }
         else if (is_window_moving)
         {
-            scs_log__(0, "no window moving");
             is_window_moving = false;
             fmod_manager_instance_->set_global_parameter("window_stop", 1.f);
             fmod_manager_instance_->set_event_state("interior/window_move", false);
@@ -471,8 +468,6 @@ void handle_interior(telemetry_data_t* telemetry_data)
         if (game_actor->right_window_button_pressed_instant == 1.f || game_actor->right_window_button_pressed_instant == 0.f)
         {
             if (!is_right_window_button_active) {
-                scs_log__(0, "right window button pressed");
-
                 fmod_manager_instance_->set_event_state("interior/window_click", true, false);
                 fmod_manager_instance_->set_event_3d_posrot("interior/window_click", 1.f, 0, 0);
             }
@@ -488,8 +483,6 @@ void handle_interior(telemetry_data_t* telemetry_data)
         if (game_actor->left_window_button_pressed_instant == 1.f || game_actor->left_window_button_pressed_instant == 0.f)
         {
             if (!is_left_window_button_active) {
-                scs_log__(0, "left window button pressed");
-
                 fmod_manager_instance_->set_event_state("interior/window_click", true, false);
                 fmod_manager_instance_->set_event_3d_posrot("interior/window_click", -1.f, 0, 0);
             }
@@ -525,16 +518,17 @@ void handle_interior(telemetry_data_t* telemetry_data)
             fmod_manager_instance_->set_bus_volume("outside/exterior", finalVolume);
             fmod_manager_instance_->set_bus_volume("exterior", finalVolume);
 
-
-            fmod_manager_instance_->set_effect("engine/engine", true);
-            fmod_manager_instance_->set_effect("engine/exhaust", true);
-            fmod_manager_instance_->set_effect("engine/turbo", true);
-            fmod_manager_instance_->set_effect("engine/start_bad", true);
-            fmod_manager_instance_->set_effect("effects/gear_grind", true);
-            fmod_manager_instance_->set_effect("effects/gear_wrong", true);
-            fmod_manager_instance_->set_effect("effects/air_brake", true);
-            fmod_manager_instance_->set_effect("effects/hook_attach", true);
-            fmod_manager_instance_->set_effect("effects/hook_detach", true);
+            if (common::has_arg("tsfmodexperimental")) {
+                fmod_manager_instance_->set_effect("engine/engine", true);
+                fmod_manager_instance_->set_effect("engine/exhaust", true);
+                fmod_manager_instance_->set_effect("engine/turbo", true);
+                fmod_manager_instance_->set_effect("engine/start_bad", true);
+                fmod_manager_instance_->set_effect("effects/gear_grind", true);
+                fmod_manager_instance_->set_effect("effects/gear_wrong", true);
+                fmod_manager_instance_->set_effect("effects/air_brake", true);
+                fmod_manager_instance_->set_effect("effects/hook_attach", true);
+                fmod_manager_instance_->set_effect("effects/hook_detach", true);
+            }
         }
         else
         { 
@@ -701,7 +695,8 @@ SCSAPI_VOID tick::telemetry_tick(const scs_event_t event, const void* const even
         return;
     }
 
-    handle_volume(telemetry_data); 
+
+    handle_volume(telemetry_data); // doesnt work at all
     handle_engine(telemetry_data);
     handle_truck_effects(telemetry_data);
    // handle_reefer(telemetry_data);

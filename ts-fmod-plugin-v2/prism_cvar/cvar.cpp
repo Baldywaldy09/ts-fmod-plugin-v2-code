@@ -37,7 +37,7 @@ int prism::cvar::init(scs_log_t scs_log__)
     scs_log_ = scs_log__;
     if (initialised) return SCS_RESULT_already_registered;
 
-    const auto g_set_cvar_valueAddress = bmem::getAddressFromPattern("48 89 5C 24 08 57 48 83 EC ?? 48 8B 81 18");
+    const auto g_set_cvar_valueAddress = bmem::patternScan("48 89 5C 24 08 57 48 83 EC ?? 48 8B 81 18");
     if (g_set_cvar_valueAddress == NULL)
     {
         scs_log_(2, "[ts-fmod-plugin-v2][prism::cvar] Unable to find the pointer offset for the \"set_value\" function");
@@ -45,7 +45,11 @@ int prism::cvar::init(scs_log_t scs_log__)
     }
     g_set_value = (set_value_t)(g_set_cvar_valueAddress);
 
-    const auto g_get_cvar_valueAddress = bmem::getAddressFromPattern("40 57 48 83 EC ?? 48");
+
+    // Snowymoon support:
+    const auto address_SCS = bmem::patternScan("40 57 48 83 EC ?? 48 83 B9 ?? ?? 00 00 ?? 48 8B F9 74 ?? 0F");
+
+    const auto g_get_cvar_valueAddress = (address_SCS != NULL) ? address_SCS : bmem::patternScan("E9 ?? ?? ?? ?? 20 48 ?? B9 ?? ?? 00 00 00 48");
     if (g_get_cvar_valueAddress == NULL)
     {
         scs_log_(2, "[ts-fmod-plugin-v2][prism::cvar] Unable to find the pointer offset for the \"get_value\" function");
@@ -54,7 +58,7 @@ int prism::cvar::init(scs_log_t scs_log__)
     g_get_value = (get_value_t)(g_get_cvar_valueAddress);
 
 
-    const auto g_register_cvar_valueAddress = bmem::getAddressFromPattern("4C 8D 81 A4");
+    const auto g_register_cvar_valueAddress = bmem::patternScan("4C 8D 81 A4");
     if (g_register_cvar_valueAddress == NULL)
     {
         scs_log_(2, "[ts-fmod-plugin-v2][prism::cvar] Unable to find the pointer offset for the \"register_value\" function");
@@ -63,7 +67,7 @@ int prism::cvar::init(scs_log_t scs_log__)
     g_register = (register_value_t)(g_register_cvar_valueAddress);
 
 
-    const auto g_unregister_cvar_valueAddress = bmem::getAddressFromPattern("83 B9 ?? ?? ?? ?? ?? 75 ?? 48 8B");
+    const auto g_unregister_cvar_valueAddress = bmem::patternScan("83 B9 ?? ?? ?? ?? ?? 75 ?? 48 8B");
     if (g_unregister_cvar_valueAddress == NULL)
     {
         scs_log_(2, "[ts-fmod-plugin-v2][prism::cvar] Unable to find the pointer offset for the \"unregister_value\" function");
@@ -71,7 +75,7 @@ int prism::cvar::init(scs_log_t scs_log__)
     }
     g_unregister = (unregister_value_t)(g_unregister_cvar_valueAddress);
 
-    const auto g_store_address = bmem::getAddressFromPattern("40 55 41 56 48 8D 6C 24 ?? 48 81 EC ?? ?? 00 00 80 3D ?? ?? ?? ?? ??");
+    const auto g_store_address = bmem::patternScan("40 55 41 56 48 8D 6C 24 ?? 48 81 EC ?? ?? 00 00 80 3D ?? ?? ?? ?? ??");
     if (g_store_address == NULL)
     {
         scs_log_(2, "[ts-fmod-plugin-v2][prism::cvar] Unable to find the pointer offset for the \"store\" function");
@@ -79,7 +83,7 @@ int prism::cvar::init(scs_log_t scs_log__)
     }
     g_store = (g_store_t)(g_store_address);
 
-    const auto unk_profile_base_instruction = bmem::getAddressFromPattern("48 8B 0D ?? ?? ?? ?? 49 C7 C4 ?? ?? ?? ?? 4C 89 BD ?? ?? 00 00");
+    const auto unk_profile_base_instruction = bmem::patternScan("48 8B 0D ?? ?? ?? ?? 49 C7 C4 ?? ?? ?? ?? 4C 89 BD ?? ?? 00 00");
     if (unk_profile_base_instruction == NULL)
     {
         scs_log_(2, "[ts-fmod-plugin-v2][prism::cvar] Unable to find the pointer offset for the \"profile_base\"");
@@ -87,8 +91,6 @@ int prism::cvar::init(scs_log_t scs_log__)
     }
     unk_profile_base_ptr = unk_profile_base_instruction + *reinterpret_cast<int32_t*>(unk_profile_base_instruction + 3) + 7;
     
-    const auto game_base = bmem::getGameBase();
-
     std::stringstream ss;
     ss << "[ts-fmod-plugin-v2][prism::cvar] Found g_set_value: 'game_base+"
         << std::hex << std::uppercase << g_set_cvar_valueAddress
@@ -124,9 +126,9 @@ prism::cvar::pointer prism::cvar::get_pointer(const char* cvar_name)
 
     std::string cvar_name_bytes = oss.str() + blank_bytes;
 
-   // scs_log_(0, cvar_name_bytes.c_str());
+  //  scs_log_(0, cvar_name_bytes.c_str());
 
-    uint64_t cvar_adrress = bmem::getAddressFromPattern(cvar_name_bytes);
+    uint64_t cvar_adrress = bmem::patternScan(cvar_name_bytes.c_str());
     if (cvar_adrress == NULL)
     {
         scs_log_(0, ("[prism::cvar] Cannot Find: " + std::string(cvar_name)).c_str());

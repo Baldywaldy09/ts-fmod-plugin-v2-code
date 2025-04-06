@@ -1,5 +1,5 @@
 ﻿#include "fmod_manager.h"
-#include "prism/cvar.h"
+#include "prism_cvar/cvar.h"
 #include "nlohmann/json.hpp"
 #include "global_variables.h"
 #include <fmod/fmod_errors.h>
@@ -56,15 +56,12 @@ bool fmod_manager::load_bank(const std::filesystem::path& plugin_files_dir, std:
 
 bool fmod_manager::unload_bank(std::string bank_name)
 {
-    scs_log_(0, ("Unloading bank: " + bank_name).c_str());
     auto bank = get_bank(bank_name.c_str());
     if (bank == nullptr) 
     { 
-        scs_log_(2, "Bank not found!");
+        scs_log_(2, "[ts-fmod-plugin-v2] fmod->unload_bank: Bank not found!");
         return false;
     }
-
-    scs_log_(0, "Bank found");
 
     auto it = std::find(selected_bank_names_.begin(), selected_bank_names_.end(), bank_name);
     selected_bank_names_.erase(it);
@@ -103,7 +100,6 @@ bool fmod_manager::unload_bank(std::string bank_name)
 
     guids_file.close();
     bank->unload();
-    scs_log_(0, "Bank unloaded");
     return true;
 }
 

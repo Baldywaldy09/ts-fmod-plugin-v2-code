@@ -36,6 +36,7 @@ namespace prism::ui
         uint64_t my_children_count;     //0x0078 (0x08)
         uint64_t my_children_max_size;  //0x0080 (0x08)
 
+        /*
         void* get(int element_id)
         {
             if (this->id == element_id) return this;
@@ -73,6 +74,7 @@ namespace prism::ui
             
             return nullptr;
         }
+        */
 
     };
     static_assert(sizeof(view_u) == 0x88);

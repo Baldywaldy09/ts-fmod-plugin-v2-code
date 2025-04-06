@@ -2,10 +2,10 @@
 #include "sound.h"
 #include "MinHook.h"
 #include "../hooks_core.h"
-#include "../prism/sound.h"
+#include "../prism/prism.h"
 #include <scssdk/scssdk.h>
 #include "../fmod_manager.h"
-#include "../memory.h"
+#include "../bmem.h"
 
 using namespace std;
 
@@ -59,7 +59,8 @@ namespace hooks
     bool detoured_sound_event_update(prism::sound_event_t* sound_event, const bool stop, const int64_t a3)
     { 
         string event;
-        string soundRef = sound_event->soundref_content.str.c_str;
+        string soundRef = sound_event->soundref_content.string;
+        
         if (soundRef.find('#') != string::npos) { event = soundRef.substr(soundRef.find('#')); event = event.erase(0, 1); }
 
         if (hooks_core::g_hooks->get_fmod_manager() == nullptr) {
@@ -71,7 +72,7 @@ namespace hooks
         else if (event.find("system_warning2") != string::npos) event = "interior/system_warning2";
         else if (event.find("system_warning3") != string::npos) event = "interior/system_warning3";
 
-        if (event.find("effects") != string::npos) // if its a truck effects sound
+        if (event.find("effects") != string::npos && customEvents.find(event + " |") != string::npos) // if its a truck effects sound and its a supported one
         {
             if (hooks_core::g_hooks->get_fmod_manager()->get_event(event.c_str())) // if the user has the sound
             {
@@ -104,7 +105,7 @@ namespace hooks
 
     bool sound::install()
     {
-        sound_event_update_address = memory::get_address_from_pattern("4C 8B DC 49 89 6B 20 57 48");
+        sound_event_update_address = bmem::patternScan("4C 8B DC 49 89 6B 20 57 48");
         if (sound_event_update_address == NULL)
         {
             scs_log(2, "[ts-fmod-plugin-v2][sound::install] Could not find address for 'sound_event_update'");

@@ -1,10 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 
 #include "prism.h"
 #include "__patterns.h"
 #include "../bmem.h"
+//#include "../global.h"
 
 std::string plugin_name;
 bool log_info = false;
@@ -20,10 +20,10 @@ void prism::initialization::found_addr(const char* name, uint64_t addr, bool fun
     std::stringstream ss;
     ss << "[prism] Found " << type << " '" << name << "' at '" << std::uppercase << std::hex << addr << "'" << std::endl;
 
-    if (log_destination == initialization::log_destination_enum::prism_console) {}
-      //  global::scs_log(0, ss.str().c_str());
+   // if (log_destination == initialization::log_destination_enum::prism_console)
+        //global::scs_log(0, ss.str().c_str());
 
-    else if (log_destination == initialization::log_destination_enum::windows_console)
+    if (log_destination == initialization::log_destination_enum::windows_console)
         std::cout << "<INFO>  | " << "[" << plugin_name << "]" << ss.str();
 
     else if (log_destination == initialization::log_destination_enum::local_file) {
@@ -56,7 +56,7 @@ void prism::initialization::missing_addr(const char* name, bool function)
         if (type == "<ERROR> | ") level = 2;
         else if (type == "<WARN>  | ") level = 1;
 
-        //global::scs_log(level, ss.str().c_str());
+      //  global::scs_log(level, ss.str().c_str());
     }
 
     else if (log_destination == initialization::log_destination_enum::windows_console)
@@ -74,7 +74,7 @@ void prism::initialization::missing_addr(const char* name, bool function)
 
 template <typename FuncType>
 bool prism::initialization::load_function(const char* name, const char* pattern, int offset, FuncType& function) {
-    uint64_t func_address = (bmem::getAddressFromPattern(pattern) + offset);
+    uint64_t func_address = (bmem::patternScan(pattern) + offset);
 
     if (!bmem::is_address_valid(func_address)) {
         missing_addr(name, true);
@@ -90,8 +90,8 @@ bool prism::initialization::load_function(const char* name, const char* pattern,
 
 template <typename ClassType>
 bool prism::initialization::load_class(const char* name, const char* pattern, int offset, ClassType& class_type) {
-    uint64_t instruction_address = (bmem::getAddressFromPattern(pattern) + offset);
-    uint64_t class_address = bmem::relativeToAbsolute<uint64_t>(instruction_address, 3, 7);
+    uint64_t instruction_address = (bmem::patternScan(pattern) + offset);
+    uint64_t class_address = bmem::relativeToAbsolute(instruction_address, 3, 7);
 
     if (!bmem::is_address_valid(class_address)) {
         missing_addr(name, false);
@@ -112,7 +112,7 @@ bool prism::initialization::init_functions(error_level_enum _error_level, log_de
     error_in_console = _error_in_console;
     plugin_name     = _plugin_name;
 
-    bmem::init("currentproc");
+    bmem::setModule("eurotrucks2.exe");
 
     // = = = = = prism::ui = = = = = //
     if (!load_function("prism::ui::load_window", load_window_pattern, 0, prism::ui::load_window)) return false;
@@ -122,6 +122,10 @@ bool prism::initialization::init_functions(error_level_enum _error_level, log_de
     // = = = = = prism::pointer_base = = = = = //
     if (!load_class("prism::pointer_base", pointer_base_pattern, 0, prism::pointer_base)) return false;
     // = = = = = prism::pointer_base = = = = = //
+
+    // = = = = = prism::spawn_model = = = = = //
+    if (!load_function("prism::spawn_model", spawn_model_pattern, 0, prism::spawn_model)) return false;
+    // = = = = = prism::spawn_model = = = = = //
 
     return true;
 }

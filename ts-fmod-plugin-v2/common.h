@@ -1,12 +1,47 @@
 ﻿#pragma once
 
 #include <fmod/fmod.hpp>
-
+#include <shellapi.h>
 namespace common
 {
     inline bool debug = true;
     inline const char* plugin_version = "1.54";
     constexpr uint32_t supported_game_version = 54;
+
+    inline int argc = -1;
+    inline const char** argv = nullptr;
+
+    inline bool has_arg(std::string arg)
+    {
+        if (argc == -1)
+        {
+            // Get wide string command line
+            LPWSTR* argvW = CommandLineToArgvW(GetCommandLineW(), &argc);
+            argv = new const char* [argc];
+
+            for (int i = 0; i < argc; ++i)
+            {
+                // Convert each wide string to multibyte string
+
+                int len = WideCharToMultiByte(CP_UTF8, 0, argvW[i], -1, nullptr, 0, nullptr, nullptr);
+                char* arg = new char[len];
+                WideCharToMultiByte(CP_UTF8, 0, argvW[i], -1, arg, len, nullptr, nullptr);
+                argv[i] = arg;
+            }
+
+            LocalFree(argvW);
+        }
+
+        arg = "-" + arg;
+
+        for (int i = 0; i < argc; ++i) {
+            if (arg == argv[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     inline FMOD_GUID get_guid(const std::string& s_guid)
     {

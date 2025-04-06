@@ -54,6 +54,9 @@
     <Filter Include="Header Files\prism\actors">
       <UniqueIdentifier>{aaef0676-6b06-41be-bcb0-2a790e823bc4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\prism\vehicle_camera">
+      <UniqueIdentifier>{9c522679-d2ee-44a6-b8d5-714708db1dce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hooks\hook.h">
@@ -148,6 +151,12 @@
     </ClInclude>
     <ClInclude Include="prism\actors\game_ctrl.h">
       <Filter>Header Files\prism\actors</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\vehicle_camera\vehicle_behind_rotation_camera.h">
+      <Filter>Header Files\prism\vehicle_camera</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\sound\sound_event.h">
+      <Filter>Header Files\prism\sound</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

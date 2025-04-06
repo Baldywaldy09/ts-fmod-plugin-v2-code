@@ -35,16 +35,16 @@ ui_div divide(uint64_t num, uint64_t divider) {
     return result;
 }
 
-uint64_t prism_token_manager::string_to_token(const std::string& text) {
-    uint64_t num = 0;
+token_t prism_token_manager::string_to_token(const std::string& text) {
+    token_t num = 0;
     int length = text.length();
     for (int i = 0; i < length; i++) {
-        num += static_cast<uint64_t>(pow_ul(i) * get_id_char(std::tolower(text[i])));
+        num += static_cast<token_t>(pow_ul(i) * get_id_char(std::tolower(text[i])));
     }
     return num;
 }
 
-std::string prism_token_manager::token_to_string(prism_token token) {
+std::string prism_token_manager::token_to_string(token_t token) {
     std::string result;
     while (token != 0) {
         ui_div ul_div = divide(token, letters.size());

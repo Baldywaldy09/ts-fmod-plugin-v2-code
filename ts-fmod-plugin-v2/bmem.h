@@ -3,196 +3,190 @@
 
 #pragma once
 
-#include <windows.h>
-#include <tlhelp32.h>
-#include <iostream>
+#include <cstdint>
 #include <string>
-#include <locale>
-#include <codecvt>
-#include <vector>
-#include <algorithm>
 #include <sstream>
+#include <vector>
 
 #pragma comment(lib, "../Lib/minhook.x64.lib")
 #include "MinHook.h"
 
 namespace bmem
 {
-    struct pattern_byte
-    {
-        pattern_byte() : ignore(true) {}
+	namespace
+	{
+		// custom byte type
+		class pattern_byte
+		{
+		public:
+			uint8_t byte;
+			bool ignore;
+		};
 
-        explicit pattern_byte(const std::string& byte_string, const bool ignore_this = false) : ignore(ignore_this),
-            data(string_to_uint8(byte_string)) {
-        }
+		inline uintptr_t moduleBase;
+		inline uint64_t moduleSize;
 
-        bool ignore;
-        uint8_t data;
+		inline bool wasModuleSet = false;
+	}
 
-    private:
-        static uint8_t string_to_uint8(const std::string& str)
-        {
-            std::istringstream iss(str);
-            uint32_t ret;
+	static bool setModule(const char* module)
+	{
+		if (std::string(module) == "current")
+		{
+			if (!wasModuleSet)
+				moduleBase = (uintptr_t)GetModuleHandleA(nullptr);
+			else
+				return true;
+		}
+		else
+			moduleBase = (uintptr_t)GetModuleHandleA(module);
 
-            if (iss >> std::hex >> ret) return static_cast<uint8_t>(ret);
 
-            return 0;
-        }
-    };
+		if (!moduleBase)
+		{
+			printf("[BMEM] Failed to set module to: '%s'. Module not found! | Did you mean '%s.dll' or '%s.exe'?\n", module, module, module);
+			return false;
+		}
 
-    static bool initalized = false;
-    static uint64_t game_base;
-    static uint64_t image_size;
-    static std::string loadedModuleName = "NONE";
+		const auto* header = (IMAGE_DOS_HEADER*)moduleBase;
+		const auto* nt_header = (IMAGE_NT_HEADERS64*)((uint8_t*)header + header->e_lfanew);
 
-    static void init(std::string moduleName)
-    {
-        if (initalized) { return; }
+		moduleSize = nt_header->OptionalHeader.SizeOfImage;
 
-        if (moduleName == "currentproc") {
-            if (loadedModuleName == "NONE") {
-                game_base = reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr));
-            }
-            else {
-                game_base = reinterpret_cast<uintptr_t>(GetModuleHandleA(loadedModuleName.c_str()));
-            }
-        }
-        else {
-            loadedModuleName = moduleName;
-            game_base = reinterpret_cast<uintptr_t>(GetModuleHandleA(loadedModuleName.c_str()));
-        }
+		printf("[BMEM] Module set to: '%s' (Base: 0x%llx, Size: %llu)\n", module, moduleBase, moduleSize);
 
-        const auto header = reinterpret_cast<const IMAGE_DOS_HEADER*>(game_base);
-        const auto nt_header = reinterpret_cast<const IMAGE_NT_HEADERS64*>(reinterpret_cast<const uint8_t*>(header) + header->e_lfanew);
-        image_size = nt_header->OptionalHeader.SizeOfImage;
+		wasModuleSet = true;
+		return true;
+	}
 
-        MH_Initialize();
 
-        //initalized = true;
-    }
 
-    static uint64_t getGameBase(std::string moduleName = "currentproc")
-    {
-        init(moduleName);
+	static uintptr_t patternScan(const char* patternSTR, const char* moduleToSet = "current")
+	{
+		//printf("[BMEM] bmem::patternScan: Finding pattern '%s'\n", patternSTR);
 
-        return game_base;
-    }
+		if (!setModule(moduleToSet))
+		{
+			printf("[BMEM] bmem::patternScan: Failed to initialize a module\n");
+			return 0;
+		}
 
-    static uint64_t getImageSize(std::string moduleName = "currentproc")
-    {
-        init(moduleName);
+		std::vector<pattern_byte> pattern;
 
-        return image_size;
-    }
+		std::istringstream stream(patternSTR);
+		std::string token;
+		while (stream >> token) {
+			pattern_byte pbyte;
 
-    static uint64_t getAddressFromPattern(const std::string pattern, std::string moduleName = "currentproc")
-    {
-        init(moduleName);
+			if (token == "??" || token == "?") {
+				pbyte.ignore = true;
+			}
+			else
+			{
+				if (token.length() > 2 || token.length() < 2)
+				{
+					printf("[BMEM] bmem::patternScan: Invalid token: %s\n", token.c_str());
+					return 0;
+				}
 
-        std::vector<pattern_byte> p;
-        std::istringstream iss(pattern);
-        std::string w;
+				pbyte.ignore = false;
 
-        while (iss >> w)
-        {
-            if (w[0] == '?')
-            {
-                // Wildcard
-                p.emplace_back();
-            }
-            else if (w.length() == 2 && isxdigit(w[0]) && isxdigit(w[1]))
-            {
-                // Hex
-                p.emplace_back(w);
-            }
-            else  return NULL;
-        }
+				unsigned int byte;
+				std::istringstream(token) >> std::hex >> byte;
+				pbyte.byte = (uint8_t)byte;
+			}
 
-        for (uint64_t i = 0; i < image_size; i++)
-        {
-            auto current_byte = reinterpret_cast<uint8_t*>(game_base + i);
-            auto found = true;
+			pattern.push_back(pbyte);
+		}
 
-            for (size_t ps = 0; ps < p.size(); ps++)
-            {
-                if (p[ps].ignore == false && current_byte[ps] != p[ps].data)
-                {
-                    found = false;
-                    break;
-                }
-            }
 
-            if (found) return reinterpret_cast<uint64_t>(current_byte);
-        }
+		if (pattern[0].ignore)
+		{
+			//printf("[BMEM] bmem::patternScan: Invalid byte (0)! | The first byte should never be a wildcard!\n");
+			return 0;
+		}
 
-        return NULL;
-    }
 
-    static bool is_address_valid(uint64_t address, std::string moduleName = "currentproc")
-    {
-        init(moduleName);
+		bool foundFirstByte = false;
+		int patternIndex = 0;
+		uintptr_t patternStart = 0;
+		for (uint64_t i = 0; i < moduleSize; i++)
+		{
+			uintptr_t currentAddress = moduleBase + i;
+			uint8_t currentByte = *reinterpret_cast<uint8_t*>(currentAddress);
 
-        if (!address) return false;
-        if (address == NULL) return false;
+			if (!foundFirstByte)
+			{
+				if (currentByte == pattern[patternIndex].byte)
+				{
+					patternStart = currentAddress;
+					patternIndex++;
+					foundFirstByte = true;
 
-        if (address > game_base + image_size) return false;
-        if (address < game_base) return false;
+					//printf("[BMEM] Found first byte at: 0x%llx\n", patternStart);
+				}
+			}
+			else
+			{
+				if (currentByte == pattern[patternIndex].byte) {
+					//printf("[BMEM] Found next byte at: 0x%llx\n", currentAddress);
+					patternIndex++;
+				}
+				else if (pattern[patternIndex].ignore)
+				{
+					//printf("[BMEM] Skipping byte at: 0x%llx\n", currentAddress);
+					patternIndex++;
+				}
+				else
+				{
+					//printf("[BMEM] Next byte doesnt match pattern! restarting from next byte\n\n");
 
-        return true;
-    }
+					i = (patternStart - moduleBase);
+					patternStart = 0;
+					patternIndex = 0;
+					foundFirstByte = false;
+				}
 
-    template <typename T>
-    static constexpr auto relativeToAbsolute(uintptr_t address, int addressOffset, int instructionCount) noexcept
-    {
-        return (T)(address + instructionCount + *reinterpret_cast<std::int32_t*>(address + addressOffset));
-    }
+				if (patternIndex == pattern.size())
+				{
+					break;
+				}
+			}
+		}
 
-    static uintptr_t FindDMAAddy(uintptr_t ptr, std::vector<unsigned int> offsets)
-    {
-        uintptr_t addr = ptr;
-        for (unsigned int i = 0; i < offsets.size(); ++i)
-        {
-            addr = *(uintptr_t*)addr;
-            addr += offsets[i];
-        }
-        return addr;
-    }
+		if (patternStart != NULL)
+		{
+			printf("[BMEM] bmem::patternScan: Found At: 0x%llx\n", patternStart);
+		}
+		else
+		{
+			printf("[BMEM] bmem::patternScan: Pattern not found!\n");
+		}
 
-    static void createJump(uintptr_t jumpAtAddress, uintptr_t jumpToAddress)
-    {
-        // Minhook is for "hooking" but in short it basically makes a jump to a address
-        // with the added feature of auto making trampolines
-        MH_CreateHook((LPVOID)jumpAtAddress, (LPVOID)jumpToAddress, nullptr);
-        MH_EnableHook((LPVOID)jumpAtAddress);
-    }
+		return patternStart;
+	}
 
-    static void createCall(uintptr_t callAtAddress, uintptr_t addressToCall)
-    {
-        // Create a jump since minhook auto supports trampolines if needed
-        createJump(callAtAddress, addressToCall);
+	static bool is_address_valid(uint64_t address, const char* moduleToSet = "current")
+	{
+		if (!setModule(moduleToSet))
+		{
+			printf("[BMEM] bmem::is_address_valid: Failed to initialize a module\n");
+			return false;
+		}
 
-        // Change the jump to a call
-        DWORD old_protect;
-        VirtualProtect(reinterpret_cast<void*>(callAtAddress), 1, PAGE_EXECUTE_READWRITE, &old_protect);
-        *reinterpret_cast<uint8_t*>(callAtAddress) = 0xE8; // E8 = call;
-        VirtualProtect(reinterpret_cast<void*>(callAtAddress), 1, old_protect, &old_protect);
-    }
+		setModule(moduleToSet);
 
-    // Encodes a address into a custom offset
-    static inline size_t derelocate(const size_t val)
-    {
-        if (!val) return 0;
+		if (!address) return false;
+		if (address == NULL) return false;
 
-        return (val - bmem::getGameBase()) + 0x140000000;
-    }
-}
+		if (address > moduleBase + moduleSize) return false;
+		if (address < moduleBase) return false;
 
-// Decodes a custom offset into a full address
-// Example Useage: 0x1420F7484_offset
-static inline size_t operator"" _offset(const size_t val)
-{
-    if (!val) return 0;
+		return true;
+	}
 
-    return bmem::getGameBase() + (val - 0x140000000);
+	static uintptr_t relativeToAbsolute(uintptr_t address, int addressOffset, int instructionCount)
+	{
+		return (uintptr_t)(address + instructionCount + *reinterpret_cast<std::int32_t*>(address + addressOffset));
+	}
 }

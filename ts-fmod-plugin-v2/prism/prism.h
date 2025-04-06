@@ -17,12 +17,19 @@
 
 #include "pointer_base/pointer_base.h"
 
+#include "actors/camera_manager.h"
 #include "actors/game_sound_data.h"
 #include "actors/game_ctrl.h"
 #include "actors/game_actor.h"
 
+#include "vehicle_camera/vehicle_behind_rotation_camera.h"
+
 #include "sound/fmod.h"
 #include "sound/navigation.h"
+#include "sound/sound_event.h"
+
+#include "model/model_units.h"
+#include "model/functions.h"
 
 
 

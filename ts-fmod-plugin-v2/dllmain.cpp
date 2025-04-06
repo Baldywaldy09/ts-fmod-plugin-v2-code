@@ -272,8 +272,8 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
         HWND hwnd = GetForegroundWindow();
 
         std::wstringstream message;
-        message << L"Unsupported game version detected!\n\nExpected Version: " << common::plugin_version
-            << L"\nYou have Version: 1." << game_version
+        message << L"Unsupported game version detected!\n\nPlugin is made for version: " << common::plugin_version
+            << L"\nYou are trying to use it on version: 1." << game_version
             << L"\n\nWould you like to check for a avaliable update?";
 
         int result = MessageBoxW(NULL, message.str().c_str(), L"TS-FMOD-Plugin V2 / Improved", MB_YESNO | MB_ICONERROR | MB_TOPMOST);
@@ -295,7 +295,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 
         if (outfile.is_open())
         {
-            outfile << common::plugin_version;
+            outfile << common::plugin_version << ".1";
             outfile.close();
         }
         else {
@@ -307,7 +307,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
         std::ofstream outfile(versionTXT, std::ios::trunc); // std::ios::trunc clears the file content
         if (outfile.is_open())
         {
-            outfile << common::plugin_version;
+            outfile << common::plugin_version << ".1";
             outfile.close();
         }
         else
@@ -411,6 +411,14 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 
     fmod_manager_instance->mute_game_audio();
     fmod_manager_instance->set_event_state("music/main_menu", true);
+
+    if (common::has_arg("tsfmodexperimental"))
+    {
+        scs_log(0, "[ts-fmod-plugin-v2] Experimental mode enabled!");
+    }
+    else 
+        scs_log(0, "[ts-fmod-plugin-v2] Experimental mode disabled");
+
     scs_log(0, "[ts-fmod-plugin-v2] Plugin loaded");
 
     return SCS_RESULT_ok;
@@ -422,11 +430,8 @@ SCSAPI_VOID scs_telemetry_shutdown(void)
     // Allow the game audio to take over:
      fmod_manager_instance->unmute_game_audio(); // tmp make crash
 
-    if (fmod_manager_instance != nullptr)
-    {
-        delete fmod_manager_instance;
-        fmod_manager_instance = nullptr;
-    }
+     delete fmod_manager_instance;
+     fmod_manager_instance = nullptr;
 
     //g_hooks->uninitialize();
     delete g_hooks;

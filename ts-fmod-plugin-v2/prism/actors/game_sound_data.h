@@ -8,7 +8,7 @@
 
 namespace prism
 {
-	class game_sound_data_u                                 // Size: 0x1C59
+	class game_sound_data_u // Size: 0x1C59
 	{
 	public:
 		char pad_0000[280];                                 //0x0000 (0x118)
@@ -21,7 +21,7 @@ namespace prism
 		class fmod_parameter_t* cabin_type;                 //0x0128 (0x08)
 		class fmod_parameter_t* cabin_rot;                  //0x0130 (0x08)
 		class fmod_parameter_t* cabin_out_t;                //0x0138 (0x08)
-		vector_2 window_state;                               //0x0140 (0x08) first=left second=right
+		vector_2 window_state;                              //0x0140 (0x08) first=left second=right
 		class fmod_parameter_t* wnd_left;                   //0x0148 (0x08)
 		class fmod_parameter_t* wnd_right;                  //0x0150 (0x08)
 		float daytime_value;                                //0x0158 (0x04)
@@ -32,7 +32,7 @@ namespace prism
 		class string_dyn_t navigation_bank_path;            //0x07A8 (0x18)
 		class navigation_sound_event* playing_navi_sound;   //0x07C0 (0x08)
 		char pad_07C8[5128];                                //0x07C8 (0x1408)
-		vector_3 cam_position;                               //0x1BD0 (0x0c)
+		vector_3 cam_position;                              //0x1BD0 (0x0c)
 		char pad_1BDC[124];                                 //0x1BDC (0x7c)
 		bool echo;                                          //0x1C58 (0x01)
 	};
