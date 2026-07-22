@@ -143,9 +143,8 @@
       <AdditionalDependencies>$(solutiondir)lib/fmod_vc.lib;$(solutiondir)lib/fmodstudio_vc.lib;$(solutiondir)lib/minhook.x64.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "$(SolutionDir)dist\$(targetfilename)"
-copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\SteamLibrary\steamapps\common\Euro Truck Simulator 2\bin\win_x64\plugins\$(targetfilename)"
-copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\SteamLibrary\steamapps\common\American Truck Simulator\bin\win_x64\plugins\$(targetfilename)"</Command>
+      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\SteamLibrary\steamapps\common\Euro Truck Simulator 2\bin\win_x64\plugins\$(targetfilename)"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -174,9 +173,8 @@ copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\Steam
       </ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "$(SolutionDir)dist\$(targetfilename)"
-copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\SteamLibrary\steamapps\common\Euro Truck Simulator 2\bin\win_x64\plugins\$(targetfilename)"
-copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\SteamLibrary\steamapps\common\American Truck Simulator\bin\win_x64\plugins\$(targetfilename)"</Command>
+      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\SteamLibrary\steamapps\common\Euro Truck Simulator 2\bin\win_x64\plugins\$(targetfilename)"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -197,8 +195,7 @@ copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\Steam
     <ClInclude Include="prism\common\strings.h" />
     <ClInclude Include="prism\common\unit.h" />
     <ClInclude Include="prism\common\vectors.h" />
-    <ClInclude Include="prism\pointer_base\pointer_base.h" />
-    <ClInclude Include="prism\prism.h" />
+    <ClInclude Include="prism\unit.h" />
     <ClInclude Include="prism\sound\fmod.h" />
     <ClInclude Include="prism\sound\navigation.h" />
     <ClInclude Include="prism\sound\sound_event.h" />
@@ -207,7 +204,6 @@ copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\Steam
     <ClInclude Include="prism\ui\functions.h" />
     <ClInclude Include="prism\ui\ui.h" />
     <ClInclude Include="prism\vehicle_camera\vehicle_behind_rotation_camera.h" />
-    <ClInclude Include="prism\__patterns.h" />
     <ClInclude Include="prism_cvar\cvar.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="sdk_stores.h" />
@@ -222,7 +218,6 @@ copy /Y "$(SolutionDir)$(Platform)\$(Configuration)\$(targetfilename)" "H:\Steam
     <ClCompile Include="fmod_manager.cpp" />
     <ClCompile Include="hooks\hook.cpp" />
     <ClCompile Include="hooks\sound.cpp" />
-    <ClCompile Include="prism\prism.cpp" />
     <ClCompile Include="prism\token\token.cpp" />
     <ClCompile Include="prism_cvar\cvar.cpp" />
     <ClCompile Include="tick.cpp" />

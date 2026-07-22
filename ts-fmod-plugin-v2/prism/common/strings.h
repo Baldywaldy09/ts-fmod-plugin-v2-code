@@ -10,8 +10,9 @@ namespace prism
         char* string;       //0x0008 (0x08)
         uint32_t size;      //0x0010 (0x04)
         uint32_t capacity;  //0x0014 (0x04)
+        void* unk;
     };
-    static_assert(sizeof(string_dyn_t) == 0x18);
+    static_assert(sizeof(string_dyn_t) == 0x20);
 
 
     // basically a const char** (if a prism::string*)

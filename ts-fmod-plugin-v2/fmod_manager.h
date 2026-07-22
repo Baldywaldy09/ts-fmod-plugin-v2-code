@@ -28,6 +28,7 @@ public:
     ~fmod_manager();
 
     bool init(bool ETS2);
+    void post_init(FMOD::Studio::System* new_system);
 
     void check_events();
     void mute_game_audio();

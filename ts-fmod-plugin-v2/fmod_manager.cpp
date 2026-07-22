@@ -5,6 +5,7 @@
 #include <fmod/fmod_errors.h>
 #include "common.h"
 #include <fmod/fmod_dsp_effects.h>
+#include "bmem.h"
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 using namespace global_variables::cvar;
@@ -13,8 +14,10 @@ fmod_manager::fmod_manager(const scs_log_t scs_log) : scs_log_(scs_log) {}
 
 fmod_manager::~fmod_manager()
 {
-    system_->release();
-    CoUninitialize();
+    // We are now using the SCS system so we should not unload fmod on plugin unload
+    
+    //system_->release();
+    //CoUninitialize();
 }
 
 bool fmod_manager::load_bank(const std::filesystem::path& plugin_files_dir, std::string bank_name)
@@ -252,56 +255,61 @@ void fmod_manager::mute_game_audio()
 {
     if (get_event("engine/engine"))
     {
-        prism::cvar::set_value(s_truck_engine_mute, "1");
-        prism::cvar::set_value(s_truck_exhaust_mute, "1");
-        prism::cvar::set_value(s_truck_turbo_mute, "1");
+        s_truck_engine_mute->set_value("1");
+        s_truck_exhaust_mute->set_value("1");
+        s_truck_turbo_mute->set_value("1");
     }
     else
     {
-        prism::cvar::set_value(s_truck_engine_mute, "0");
-        prism::cvar::set_value(s_truck_exhaust_mute, "0");
-        prism::cvar::set_value(s_truck_turbo_mute, "0");
+        s_truck_engine_mute->set_value("0");
+        s_truck_exhaust_mute->set_value("0");
+        s_truck_turbo_mute->set_value("0");
     }
 
-    if (get_event("interior/blinker_on")) prism::cvar::set_value(s_interior_mute, "1");
-    else prism::cvar::set_value(s_interior_mute, "0");
+    if (get_event("interior/blinker_on")) s_interior_mute->set_value("1");
+    else s_interior_mute->set_value("0");
 
-    if (get_event("music/main_menu")) prism::cvar::set_value(s_ui_music_mute, "1");
+    if (get_event("music/main_menu")) s_ui_music_mute->set_value("1");
     else
     {
-        if (telemetry_data.menuMusic) prism::cvar::set_value(s_ui_music_mute, "0");
+        if (telemetry_data.menuMusic) s_ui_music_mute->set_value("0");
     }
 
-    if (get_event("finish")) prism::cvar::set_value(s_navigation_mute, "1");
+    if (get_event("finish")) s_navigation_mute->set_value("1");
     else 
     {
-        if (telemetry_data.navigation) prism::cvar::set_value(s_navigation_mute, "0");
+        if (telemetry_data.navigation) s_navigation_mute->set_value("0");
     }
 
-    prism::cvar::store(false, true, false);
+//    prism::cvar::store(false, true, false);
 }
 
 void fmod_manager::unmute_game_audio()
 {
     if (get_event("engine/engine"))
     {
-        prism::cvar::set_value(s_truck_engine_mute, "0");
-        prism::cvar::set_value(s_truck_exhaust_mute, "0");
-        prism::cvar::set_value(s_truck_turbo_mute, "0");
+        s_truck_engine_mute->set_value("0");
+        s_truck_exhaust_mute->set_value("0");
+        s_truck_turbo_mute->set_value("0");
     }
 
-    if (get_event("interior/blinker_off")) prism::cvar::set_value(s_interior_mute, "0");
+    if (get_event("interior/blinker_off")) s_interior_mute->set_value("0");
 
-    if (get_event("music/main_menu")) prism::cvar::set_value(s_ui_music_mute, "0");
+    if (get_event("music/main_menu")) s_ui_music_mute->set_value("0");
 
-    if (get_event("finish")) prism::cvar::set_value(s_navigation_mute, "0");
+    if (get_event("finish")) s_navigation_mute->set_value("0");
 
-    prism::cvar::store(false, true, false);
+    //prism::cvar::store(false, true, false);
+}
+
+
+void fmod_manager::post_init(FMOD::Studio::System* new_system)
+{
 }
 
 
 bool fmod_manager::init(bool ETS2)
-{
+{    
     const auto co_init_res = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
     if (co_init_res != S_OK && co_init_res != S_FALSE)
@@ -475,16 +483,16 @@ void fmod_manager::set_paused(const bool state)
     {
         if (get_event("engine/engine"))
         {
-            prism::cvar::set_value(s_truck_engine_mute, "0");
-            prism::cvar::set_value(s_truck_exhaust_mute, "0");
-            prism::cvar::set_value(s_truck_turbo_mute, "0");
+            s_truck_engine_mute->set_value("0");
+            s_truck_exhaust_mute->set_value("0");
+            s_truck_turbo_mute->set_value("0");
         }
 
-        if (get_event("interior/blinker_off")) prism::cvar::set_value(s_interior_mute, "0");
+        if (get_event("interior/blinker_off")) s_interior_mute->set_value("0");
 
-        if (get_event("finish")) prism::cvar::set_value(s_navigation_mute, "0");
+        if (get_event("finish")) s_navigation_mute->set_value("0");
 
-        prism::cvar::store(false, true, false);
+     //   prism::cvar::store(false, true, false);
     }
     else
     {
@@ -497,7 +505,7 @@ std::vector<std::thread> threads;
 bool shouldStop = false;
 void fmod_manager::_set_minimised() 
 {
-    float master = prism::cvar::get_value(s_master_volume);
+    float master = s_master_volume->current_value_float;
 
     do
     {
@@ -533,7 +541,7 @@ void fmod_manager::set_minimised(bool state)
             }
         }
 
-        set_bus_volume("", prism::cvar::get_value(s_master_volume));
+        set_bus_volume("", s_master_volume->current_value_float);
 
         muted = false;
     }

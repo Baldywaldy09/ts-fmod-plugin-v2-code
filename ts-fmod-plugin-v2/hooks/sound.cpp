@@ -2,7 +2,7 @@
 #include "sound.h"
 #include "MinHook.h"
 #include "../hooks_core.h"
-#include "../prism/prism.h"
+#include "../prism/sound/sound_event.h"
 #include <scssdk/scssdk.h>
 #include "../fmod_manager.h"
 #include "../bmem.h"
@@ -21,7 +21,8 @@ prism_sound_event_update_t original_sound_event_update;
 
 void scs_log(scs_log_type_t log_type, scs_string_t message) { hooks_core::g_hooks->log(log_type, message); }
 namespace hooks
-{ 
+{
+    string eventsToMute = "effects/reverse |";
     string customEvents = "engine/start_bad | interior/noise | effects/gear_grind | effects/gear_wrong | effects/air_brake | effects/hook_attach | effects/hook_detach | interior/system_warning1 | interior/system_warning2 | interior/system_warning3 |"; // sounds that the plugin needs to play from here:
     string whenStopped = "interior/noise |"; // sounds that should play only when last one has stopped playing
 
@@ -57,10 +58,10 @@ namespace hooks
     }
 
     bool detoured_sound_event_update(prism::sound_event_t* sound_event, const bool stop, const int64_t a3)
-    { 
+    {
         string event;
         string soundRef = sound_event->soundref_content.string;
-        
+
         if (soundRef.find('#') != string::npos) { event = soundRef.substr(soundRef.find('#')); event = event.erase(0, 1); }
 
         if (hooks_core::g_hooks->get_fmod_manager() == nullptr) {
@@ -72,7 +73,7 @@ namespace hooks
         else if (event.find("system_warning2") != string::npos) event = "interior/system_warning2";
         else if (event.find("system_warning3") != string::npos) event = "interior/system_warning3";
 
-        if (event.find("effects") != string::npos && customEvents.find(event + " |") != string::npos) // if its a truck effects sound and its a supported one
+        if (event.find("effects") != string::npos && (customEvents.find(event + " |") != string::npos || eventsToMute.find(event + " |") != string::npos)) // if its a truck effects sound and its a supported one
         {
             if (hooks_core::g_hooks->get_fmod_manager()->get_event(event.c_str())) // if the user has the sound
             {
@@ -142,7 +143,7 @@ namespace hooks
             return;
         }
         installed_ = false;
-        
+
         // breakThreads();
     }
 }

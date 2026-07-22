@@ -48,9 +48,6 @@
     <Filter Include="Header Files\prism\sound">
       <UniqueIdentifier>{f90bc536-3976-4cb7-8004-8c5b40f26d22}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\prism\pointer_base">
-      <UniqueIdentifier>{8e0c0f69-9307-4fc7-b9c8-6cc248076c2b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\prism\actors">
       <UniqueIdentifier>{aaef0676-6b06-41be-bcb0-2a790e823bc4}</UniqueIdentifier>
     </Filter>
@@ -101,12 +98,6 @@
     <ClInclude Include="prism_cvar\cvar.h">
       <Filter>Header Files\prism_cvar</Filter>
     </ClInclude>
-    <ClInclude Include="prism\prism.h">
-      <Filter>Header Files\prism</Filter>
-    </ClInclude>
-    <ClInclude Include="prism\__patterns.h">
-      <Filter>Header Files\prism</Filter>
-    </ClInclude>
     <ClInclude Include="prism\ui\ui.h">
       <Filter>Header Files\prism\ui</Filter>
     </ClInclude>
@@ -140,9 +131,6 @@
     <ClInclude Include="prism\sound\fmod.h">
       <Filter>Header Files\prism\sound</Filter>
     </ClInclude>
-    <ClInclude Include="prism\pointer_base\pointer_base.h">
-      <Filter>Header Files\prism\pointer_base</Filter>
-    </ClInclude>
     <ClInclude Include="prism\actors\game_sound_data.h">
       <Filter>Header Files\prism\actors</Filter>
     </ClInclude>
@@ -157,6 +145,9 @@
     </ClInclude>
     <ClInclude Include="prism\sound\sound_event.h">
       <Filter>Header Files\prism\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="prism\unit.h">
+      <Filter>Header Files\prism</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -183,9 +174,6 @@
     </ClCompile>
     <ClCompile Include="prism_cvar\cvar.cpp">
       <Filter>Source Files\prism_cvar</Filter>
-    </ClCompile>
-    <ClCompile Include="prism\prism.cpp">
-      <Filter>Source Files\prism</Filter>
     </ClCompile>
     <ClCompile Include="prism\token\token.cpp">
       <Filter>Source Files\prism\token</Filter>

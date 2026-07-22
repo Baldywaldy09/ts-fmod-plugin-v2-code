@@ -1,19 +1,18 @@
 #pragma once
 #include "prism_cvar/cvar.h"
-#include "prism/prism.h"
 
 namespace global_variables
 {
     namespace audio
     {
-        inline float current_master_volume = 0.f;
-        inline float current_navigation_volume = 0.f;
-        inline float current_music_volume = 0.f;
-        inline float current_engine_volume = 0.f;
-        inline float current_turbo_volume = 0.f;
-        inline float current_exhaust_volume = 0.f;
-        inline float current_effects_volume = 0.f;
-        inline float current_interior_volume = 0.f;
+        inline float current_master_volume = -2.f;
+        inline float current_navigation_volume = -2.f;
+        inline float current_music_volume = -2.f;
+        inline float current_engine_volume = -2.f;
+        inline float current_turbo_volume = -2.f;
+        inline float current_exhaust_volume = -2.f;
+        inline float current_effects_volume = -2.f;
+        inline float current_interior_volume = -2.f;
 
         inline bool menu_music = false;
         inline bool navigation = false;
@@ -21,25 +20,25 @@ namespace global_variables
 
     namespace cvar
     {
-        inline prism::cvar::pointer s_master_volume;
-        inline prism::cvar::pointer s_truck_engine_volume;
-        inline prism::cvar::pointer s_truck_engine_mute;
-        inline prism::cvar::pointer s_truck_turbo_volume;
-        inline prism::cvar::pointer s_truck_turbo_mute;
-        inline prism::cvar::pointer s_truck_exhaust_volume;
-        inline prism::cvar::pointer s_truck_exhaust_mute;
-        inline prism::cvar::pointer s_truck_effects_volume;
-        inline prism::cvar::pointer s_interior_volume;
-        inline prism::cvar::pointer s_interior_mute;
-        inline prism::cvar::pointer s_ui_music_volume;
-        inline prism::cvar::pointer s_ui_music_mute;
-        inline prism::cvar::pointer s_navigation_volume;
-        inline prism::cvar::pointer s_navigation_mute;
-        inline prism::cvar::pointer g_voice_navigation;
-        inline prism::cvar::pointer g_voice_navigation_pack;
-        inline prism::cvar::pointer g_hardcore_simulation;
-        inline prism::cvar::pointer s_reverse_enabled;
-        inline prism::cvar::pointer s_suspend_sound;
+        inline prism::cvar::value* s_master_volume;
+        inline prism::cvar::value* s_truck_engine_volume;
+        inline prism::cvar::value* s_truck_engine_mute;
+        inline prism::cvar::value* s_truck_turbo_volume;
+        inline prism::cvar::value* s_truck_turbo_mute;
+        inline prism::cvar::value* s_truck_exhaust_volume;
+        inline prism::cvar::value* s_truck_exhaust_mute;
+        inline prism::cvar::value* s_truck_effects_volume;
+        inline prism::cvar::value* s_interior_volume;
+        inline prism::cvar::value* s_interior_mute;
+        inline prism::cvar::value* s_ui_music_volume;
+        inline prism::cvar::value* s_ui_music_mute;
+        inline prism::cvar::value* s_navigation_volume;
+        inline prism::cvar::value* s_navigation_mute;
+        inline prism::cvar::value* g_voice_navigation;
+        inline prism::cvar::value* g_voice_navigation_pack;
+        inline prism::cvar::value* g_hardcore_simulation;
+        inline prism::cvar::value* s_reverse_enabled;
+        inline prism::cvar::value* s_suspend_sound;
     };
 
     namespace truck

@@ -1,68 +1,83 @@
 #pragma once
-
+#include <cstdint>
 #include <stdexcept>
 
 #pragma pack(push, 1)
 namespace prism
 {
-	class array_dyn_t // Size: 0x0020
+	class array_t
 	{
-		void* items;      //0x0008 (0x08)
 	public:
-		uint64_t size;     //0x0010 (0x08)
-		uint64_t capacity; //0x0018 (0x08)
+		void* items;      //0x0008
 
-		void* operator[](uint64_t index) {
-			if (!has_index(index))
-				throw std::out_of_range("Index out of range");
+		uint64_t size;     //0x0010
+		uint64_t capacity; //0x0018
 
-			printf("[Prism3D] array_dyn_t: Getting index: %llu\n", index);
-
-			return static_cast<void**>(items)[index];
-		}
+		void* unk; // 0x0020
 
 		// Unknown
-		virtual void initialize();
+		virtual void destructor() {}
 
-		// literally deletes all items
-		virtual uint64_t clear();
+		// Delete all items
+		virtual uint64_t clear() { return 0; }
 
 		// Moves the array items list to a different memory location
-		virtual uint64_t reallocate();
+		virtual uint64_t reallocate() { return 0; }
 
-		// Returns true or false depending on if a index is out of range or not
-		virtual bool has_index(uint64_t index);
-
-
-		virtual void Function4();
-		virtual void Function5();
-		virtual void Function6();
-
-
-		virtual void get_parent_unit_descriptor();
-		virtual void Function8();
-		virtual void set_parent_unit_attributes();
-		virtual void Function10();
-		virtual void Function11();
-		virtual void Function12();
-		virtual void Function13();
-		virtual void Function14();
-		virtual void Function15();
-		virtual void Function16();
-		virtual void Function17();
-		virtual void Function18();
-		virtual void Function19();
-		virtual void Function20();
-		virtual void Function21();
-		virtual void Function22();
-		virtual void Function23();
-		virtual void Function24();
-		virtual void Function25();
-		virtual void Function26();
-		virtual void Function27();
-		virtual void Function28();
-		virtual void Function29();
+		virtual bool allocate(uint64_t new_size) { return 0; }
 	};
-	static_assert(sizeof(array_dyn_t) == 0x20);
+
+	template<typename T = void*>
+	class array_dyn_t : public array_t // Size: 0x0028
+	{
+	public:
+		array_dyn_t(void* vtable_address)
+		{
+			*(void**)this = vtable_address;
+		}
+
+		void push_back(T item)
+		{
+			if (size == capacity) {
+				allocate(size + 1);
+			}
+
+			reinterpret_cast<T*>(items)[size] = item;
+			++size;
+		}
+
+		T& operator[](uint64_t index)
+		{
+			if (index >= size)
+				throw std::out_of_range("index");
+
+			return reinterpret_cast<T*>(items)[index];
+		}
+
+		const T& operator[](uint64_t index) const
+		{
+			if (index >= size)
+				throw std::out_of_range("index");
+
+			return reinterpret_cast<const T*>(items)[index];
+		}
+
+		struct iterator {
+			T* ptr;
+
+			T& operator*() const { return *ptr; }
+			iterator& operator++() { ++ptr; return *this; }
+			bool operator!=(const iterator& other) const { return ptr != other.ptr; }
+		};
+
+		iterator begin() {
+			return { reinterpret_cast<T*>(items) };
+		}
+
+		iterator end() {
+			return { reinterpret_cast<T*>(items) + size };
+		}
+	};
+	static_assert(sizeof(array_dyn_t<>) == 0x28);
 };
 #pragma pack(pop)

@@ -3,8 +3,20 @@
 #include "hooks_core.h"
 #include "common.h"
 #include "memory.h"
+#include "bmem.h"
 #include <fmod/fmod_errors.h>
-#include "prism/prism.h"
+
+#include "prism\common\vectors.h"
+#include "prism\common\arrays.h"
+#include "prism\common\strings.h"
+#include "prism\sound\sound_event.h"
+#include "prism\sound\navigation.h"
+#include "prism\vehicle_camera\vehicle_behind_rotation_camera.h"
+
+#include "prism\actors\game_actor.h"
+#include "prism\actors\game_ctrl.h"
+#include "prism\actors\camera_manager.h"
+#include "prism\actors\game_sound_data.h"
 
 using namespace global_variables::audio;
 using namespace global_variables::cvar;
@@ -34,11 +46,11 @@ void tick::init_tick(scs_log_t scs_log, fmod_manager* fmod_manager_instance)
     fmod_manager_instance_ = fmod_manager_instance;
 }
 
-void handle_volume(telemetry_data_t* telemetry_data)
+void handle_volume(telemetry_data_t* telemetry_data, prism::camera_manager_u* camera_manager)
 {
     // Background Audio:
-    
-    int suspend_sound = prism::cvar::get_value(s_suspend_sound);
+
+    int suspend_sound = s_suspend_sound->current_value_int;
     if (suspend_sound == 1)
     {
         DWORD game_processID = GetCurrentProcessId();
@@ -58,14 +70,14 @@ void handle_volume(telemetry_data_t* telemetry_data)
 
 
     // Handle Levels:
-    const float master_volume = prism::cvar::get_value(s_master_volume);
-    const float navigation_volume = prism::cvar::get_value(s_navigation_volume);
-    const float music_volume = prism::cvar::get_value(s_ui_music_volume);
-    const float engine_volume = prism::cvar::get_value(s_truck_engine_volume);
-    const float turbo_volume = prism::cvar::get_value(s_truck_turbo_volume);
-    const float exhaust_volume = prism::cvar::get_value(s_truck_exhaust_volume);
-    const float effects_volume = prism::cvar::get_value(s_truck_effects_volume);
-    const float interior_volume = prism::cvar::get_value(s_interior_volume);
+    const float master_volume = s_master_volume->current_value_float;
+    const float navigation_volume = s_navigation_volume->current_value_float;
+    const float music_volume = s_ui_music_volume->current_value_float;
+    const float engine_volume = s_truck_engine_volume->current_value_float;
+    const float turbo_volume = s_truck_turbo_volume->current_value_float;
+    const float exhaust_volume = s_truck_exhaust_volume->current_value_float;
+    const float effects_volume = s_truck_effects_volume->current_value_float;
+    const float interior_volume = s_interior_volume->current_value_float;
 
     fmod_manager_instance_->set_bus_volume("", master_volume);
     fmod_manager_instance_->set_bus_volume("game/navigation", navigation_volume);
@@ -78,7 +90,7 @@ void handle_volume(telemetry_data_t* telemetry_data)
 
     std::stringstream ss;
     std::ostringstream volume_stream;
-        
+
     if (master_volume != current_master_volume)
     {
         volume_stream.str("");
@@ -176,24 +188,24 @@ void handle_volume(telemetry_data_t* telemetry_data)
         current_interior_volume = interior_volume;
     }
 
-    if (prism::pointer_base && prism::pointer_base->camera_manager)
+    if (camera_manager)
     {
-        if (prism::pointer_base->camera_manager->current_camera == 1 && !paused)
+        if (camera_manager->current_camera == 1 && !paused)
         {
-            prism::vehicle_behind_rotation_camera* chase_camera = nullptr;
+            prism::vehicle_behind_rotation_camera_u* chase_camera = nullptr;
 
-            if (prism::pointer_base->camera_manager->vehicle_cameras.has_index(1)) 
+            if (camera_manager->vehicle_cameras.size >= 2)
             {
-                chase_camera = (prism::vehicle_behind_rotation_camera*)prism::pointer_base->camera_manager->vehicle_cameras[1];
+                chase_camera = (prism::vehicle_behind_rotation_camera_u*)camera_manager->vehicle_cameras[1];
 
-                if (std::string(chase_camera->get_unit_descriptor()->string->value) != "vehicle_behind_rotation_camera")
+                if (std::string(chase_camera->get_unit_descriptor()->class_name->value) != "vehicle_behind_rotation_camera")
                 {
-                    scs_log__(2, "[ts-fmod-plugin-v2][Prism3D] prism::pointer_base->camera_manager->vehicle_cameras[1] returned a invalid camera type!");
-                    
+                    scs_log__(2, "[ts-fmod-plugin-v2][Prism3D] camera_manager->vehicle_cameras[1] returned a invalid camera type!");
 
-                    std::string got = std::string(chase_camera->get_unit_descriptor()->string->value);
-                    scs_log__(2, ("[ts-fmod-plugin-v2][Prism3D] -> Got: 'prism::" + got + "' expected: 'prism::vehicle_behind_rotation_camera'").c_str());
-                
+
+                    std::string got = std::string(chase_camera->get_unit_descriptor()->class_name->value);
+                    scs_log__(2, ("[ts-fmod-plugin-v2][Prism3D] -> Got: 'prism::" + got + "' expected: 'prism::vehicle_behind_rotation_camera_u'").c_str());
+
                     chase_camera = nullptr;
                 }
             }
@@ -221,10 +233,10 @@ void handle_volume(telemetry_data_t* telemetry_data)
                 };
 
                 if (distance_from_truck != min_distance) {
-                    adjust_volume(engine_volume_distance, 0.65);
-                    adjust_volume(turbo_volume_distance, 0.65);
-                    adjust_volume(exhaust_volume_distance, 0.65);
-                    adjust_volume(effects_volume_distance, 0.65);
+                    adjust_volume(engine_volume_distance, 0.45);
+                    adjust_volume(turbo_volume_distance, 0.45);
+                    adjust_volume(exhaust_volume_distance, 0.45);
+                    adjust_volume(effects_volume_distance, 0.45);
                 }
 
             //    scs_log__(0, std::to_string(distance_from_truck).c_str());
@@ -241,7 +253,7 @@ void handle_volume(telemetry_data_t* telemetry_data)
 
 bool engine_failed = false;
 int engineRetryCount = 0;
-void handle_engine(telemetry_data_t* telemetry_data)
+void handle_engine(telemetry_data_t* telemetry_data, prism::game_ctrl_u* game_ctrl)
 {
     fmod_manager_instance_->set_global_parameter("trans_rpm", telemetry_data->truck.engine_rpm);
     fmod_manager_instance_->set_global_parameter("park_brake", telemetry_data->truck.parking_brake);
@@ -251,10 +263,11 @@ void handle_engine(telemetry_data_t* telemetry_data)
     fmod_manager_instance_->set_event_parameter("engine/engine", "engine_load", telemetry_data->truck.effective_throttle);
     fmod_manager_instance_->set_event_parameter("engine/exhaust", "load", telemetry_data->truck.effective_throttle);
 
-    prism::game_actor_u* game_actor = prism::pointer_base->game_ctrl ? prism::pointer_base->game_ctrl->game_actor : nullptr;
-
+    prism::game_actor_u* game_actor = game_ctrl ? game_ctrl->game_actor : nullptr;
     if (game_actor != nullptr)
     {
+        //scs_log__(0, std::to_string(game_actor->wiper_position).c_str());
+
         fmod_manager_instance_->set_global_parameter("air_pressure", game_actor->air_pressure);
 
         if (game_actor->turbo_pressure >= 0 && game_actor->turbo_pressure <= 1)
@@ -262,13 +275,12 @@ void handle_engine(telemetry_data_t* telemetry_data)
             fmod_manager_instance_->set_event_parameter("engine/turbo", "turbo", game_actor->turbo_pressure);
         }
 
-        const auto engine_state = game_actor->engine_state;
-        if (engine_state != stored_engine_state)
+        if (game_actor->engine_state != stored_engine_state)
         {
-            if (!start_bad && engine_state > 0 && stored_engine_state == 0)
+            if (!start_bad && game_actor->engine_state > 0 && stored_engine_state == 0)
             {
                 // engine is starting/running
-                fmod_manager_instance_->set_event_parameter("engine/engine", "engine_state", engine_state);
+                fmod_manager_instance_->set_event_parameter("engine/engine", "engine_state", game_actor->engine_state);
 
                 fmod_manager_instance_->set_event_parameter("engine/engine", "play", 1);
                 fmod_manager_instance_->set_event_parameter("engine/exhaust", "play", 1);
@@ -281,7 +293,7 @@ void handle_engine(telemetry_data_t* telemetry_data)
                 start_bad = false;
                 engineRunning = true;
             }
-            else if (engine_state == 0 || engine_state == 3) // engine is no longer running
+            else if (game_actor->engine_state == 0 || game_actor->engine_state == 3) // engine is no longer running
             {
                 fmod_manager_instance_->set_event_parameter("engine/engine", "play", 0);
                 fmod_manager_instance_->set_event_parameter("engine/exhaust", "play", 0);
@@ -290,19 +302,33 @@ void handle_engine(telemetry_data_t* telemetry_data)
                 start_bad = false;
                 engineRunning = false;
             }
-            stored_engine_state = engine_state;
+            stored_engine_state = game_actor->engine_state;
         }
 
-        if (engine_state == 2 && !engineRunning) {
-            scs_log__(2, "[ts-fmod-plugin-v2] Failed to start engine! Retrying..."); 
-            stored_engine_state = 0;
-
+        if (!start_bad && game_actor->engine_state == 2 && !engineRunning) {
             engine_failed = true;
+            scs_log__(2, "[ts-fmod-plugin-v2] Failed to start engine! Forcing startup...");
+
+            // engine is starting/running
+            fmod_manager_instance_->set_event_parameter("engine/engine", "engine_state", game_actor->engine_state);
+
+            fmod_manager_instance_->set_event_parameter("engine/engine", "play", 1);
+            fmod_manager_instance_->set_event_parameter("engine/exhaust", "play", 1);
+            fmod_manager_instance_->set_event_parameter("engine/turbo", "play", 1);
+
+            fmod_manager_instance_->set_event_state("engine/engine", true);
+            fmod_manager_instance_->set_event_state("engine/exhaust", true);
+            fmod_manager_instance_->set_event_state("engine/turbo", true);
+
+            start_bad = false;
+            engineRunning = true;
+
+            stored_engine_state = 2;
         }
 
-        if (engine_failed && engine_state == 2 && engineRunning)
-        { 
-            scs_log__(0, "[ts-fmod-plugin-v2] Retry successfull!");
+        if (engine_failed && game_actor->engine_state == 2 && engineRunning)
+        {
+            scs_log__(0, "[ts-fmod-plugin-v2] Engine force start successfull!");
             engine_failed = false;
         }
 
@@ -313,7 +339,7 @@ void handle_engine(telemetry_data_t* telemetry_data)
 bool isRetarderActive = false;
 void handle_truck_effects(telemetry_data_t* telemetry_data)
 {
-   
+
   //  scs_log__(0, ("rpm: " + std::to_string(telemetry_data->truck.engine_rpm)).c_str());
 
     fmod_manager_instance_->set_global_parameter("retarder", telemetry_data->truck.retarder_level);
@@ -330,7 +356,7 @@ void handle_truck_effects(telemetry_data_t* telemetry_data)
         scs_log__(0, "Retarder");
     }
     else if (telemetry_data->truck.retarder_level == 0 && isRetarderActive)
-    { 
+    {
         fmod_manager_instance_->set_event_state("effects/retarder", false);
         fmod_manager_instance_->set_event_state("retarder/retarder", false);
         isRetarderActive = false;
@@ -348,7 +374,7 @@ void handle_truck_effects(telemetry_data_t* telemetry_data)
 
     lastGear = telemetry_data->truck.displayed_gear;
 
-    int reverse_enabled = prism::cvar::get_value(s_reverse_enabled);
+    int reverse_enabled = s_reverse_enabled->current_value_int;
     if (reverse_enabled == 1)
     {
         if (telemetry_data->truck.light_reverse)
@@ -362,11 +388,11 @@ void handle_truck_effects(telemetry_data_t* telemetry_data)
     }
 }
 
-void handle_interior(telemetry_data_t* telemetry_data)
+void handle_interior(telemetry_data_t* telemetry_data, prism::game_ctrl_u* game_ctrl, prism::game_sound_data_u* sound_data)
 {
-    prism::game_actor_u* game_actor = prism::pointer_base->game_ctrl ? prism::pointer_base->game_ctrl->game_actor : nullptr;
+    prism::game_actor_u* game_actor = game_ctrl ? game_ctrl->game_actor : nullptr;
 
-    if (game_actor != nullptr)
+    if (game_actor)
     {
         // Handle basic interior buttons
         const auto hazard_warning = game_actor->hazards_button_instant;
@@ -413,7 +439,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
         }
         else if (game_actor->wiper_direction == -1)
         {
-            if (!wipers_moving_down) 
+            if (!wipers_moving_down)
             {
               //  scs_log__(0, "wiper moving down");
 
@@ -432,7 +458,6 @@ void handle_interior(telemetry_data_t* telemetry_data)
             wipers_moving_up = false;
             wipers_moving_down = false;
         }
-
 
         // Handle window movement
         if (game_actor->left_window_state > 2 || game_actor->right_window_state > 2)  // if its moving and not just reached the end
@@ -460,7 +485,6 @@ void handle_interior(telemetry_data_t* telemetry_data)
             fmod_manager_instance_->set_global_parameter("window_stop", 1.f);
             fmod_manager_instance_->set_event_state("interior/window_move", false);
         }
-
 
         // Handle window buttons
 
@@ -495,10 +519,9 @@ void handle_interior(telemetry_data_t* telemetry_data)
         }
     }
 
-
-    prism::game_sound_data_u* sound_data = prism::pointer_base->game_sound_data;
-    if (sound_data != nullptr)
+    if (sound_data)
     {
+
         const auto window_pos = sound_data->window_state;
         fmod_manager_instance_->set_global_parameter("wnd_left", window_pos.x);
         fmod_manager_instance_->set_global_parameter("wnd_right", window_pos.y);
@@ -518,7 +541,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
             fmod_manager_instance_->set_bus_volume("outside/exterior", finalVolume);
             fmod_manager_instance_->set_bus_volume("exterior", finalVolume);
 
-            if (common::has_arg("tsfmodexperimental")) {
+            if (common::has_arg("tsfmod_deadening")) {
                 fmod_manager_instance_->set_effect("engine/engine", true);
                 fmod_manager_instance_->set_effect("engine/exhaust", true);
                 fmod_manager_instance_->set_effect("engine/turbo", true);
@@ -531,7 +554,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
             }
         }
         else
-        { 
+        {
             fmod_manager_instance_->set_bus_volume("outside", 1);
             fmod_manager_instance_->set_bus_volume("outside/exterior", 1);
             fmod_manager_instance_->set_bus_volume("exterior", 1);
@@ -551,17 +574,22 @@ void handle_interior(telemetry_data_t* telemetry_data)
         if (sound_data->is_cam_interior)
         {
             fmod_manager_instance_->set_bus_volume("cabin/interior", current_interior_volume);
+
+            fmod_manager_instance_->set_global_parameter("cabin_type", 1);
+            fmod_manager_instance_->set_global_parameter("cabin_rot", sound_data->camera_rotation_in_cabin);
+
         }
         else
         {
-            fmod_manager_instance_->set_bus_volume("cabin/interior", 0);
+            fmod_manager_instance_->set_bus_volume("cabin/interior", 0.f);
+
+            fmod_manager_instance_->set_global_parameter("cabin_type", 0.f);
+            fmod_manager_instance_->set_global_parameter("cabin_rot", 0.f);
         }
 
-        fmod_manager_instance_->set_global_parameter("cabin_out", sound_data->cabin_out);
-        fmod_manager_instance_->set_global_parameter("cabin_type", 1); // improves the cabin sound?? honestly im not sure but i think it does
-        fmod_manager_instance_->set_global_parameter("cabin_rot", sound_data->camera_rotation_in_cabin);
+        fmod_manager_instance_->set_global_parameter("cabin_out", 0.f);
         fmod_manager_instance_->set_global_parameter("surr_type", sound_data->echo);
-        fmod_manager_instance_->set_global_parameter("daytime", sound_data->daytime->value);
+        fmod_manager_instance_->set_global_parameter("daytime", sound_data->daytime_value);
 
 
         if (sound_data->playing_navi_sound != nullptr && last_played != sound_data->playing_navi_sound)
@@ -573,7 +601,7 @@ void handle_interior(telemetry_data_t* telemetry_data)
 
 
 
-    int hardcore_simulation = prism::cvar::get_value(g_hardcore_simulation);
+    int hardcore_simulation = g_hardcore_simulation->current_value_int;
     if (hardcore_simulation == 1)
     {
         if (telemetry_data->truck.brake_air_pressure_warning && telemetry_data->truck.engine_enabled)
@@ -678,7 +706,9 @@ void handle_reefer(telemetry_data_t* telemetry_data)
     }
 }
 
-bool gotPointer = false;
+static prism::game_ctrl_u* game_ctrl{};
+static prism::camera_manager_u* camera_manager{};
+static prism::game_sound_data_u* sound_data{};
 SCSAPI_VOID tick::telemetry_tick(const scs_event_t event, const void* const event_info, const scs_context_t context)
 {
     telemetry_data_t* telemetry_data = (telemetry_data_t*)context;
@@ -696,13 +726,42 @@ SCSAPI_VOID tick::telemetry_tick(const scs_event_t event, const void* const even
     }
 
 
-    handle_volume(telemetry_data); // doesnt work at all
-    handle_engine(telemetry_data);
+    if (!game_ctrl)
+    {
+        bmem::setModule("current");
+
+        uint64_t game_ctrl_ptr_instruction = bmem::patternScan("48 8B 0D ?? ?? ?? ?? 0F 57 C0 48 8B D0");
+        uint64_t game_ctrl_ptr = bmem::relativeToAbsolute(game_ctrl_ptr_instruction, 3, 7);
+
+        game_ctrl = *(prism::game_ctrl_u**)game_ctrl_ptr;
+    }
+
+
+    if (!camera_manager)
+    {
+        uint64_t camera_manager_ptr_instruction = bmem::patternScan("48 8B 05 ?? ?? ?? ?? 41 FF CE");
+        uint64_t camera_manager_ptr = bmem::relativeToAbsolute(camera_manager_ptr_instruction, 3, 7);
+
+        camera_manager = *(prism::camera_manager_u**)camera_manager_ptr;
+    }
+
+
+    if (!sound_data)
+    {
+        uint64_t sound_data_ptr_instruction = bmem::patternScan("48 8B 1D ?? ?? ?? ?? 48 8B F1 48 8B 83 ?? ?? ?? ?? 48 8D 8B");
+        uint64_t sound_data_ptr = bmem::relativeToAbsolute(sound_data_ptr_instruction, 3, 7);
+
+        sound_data = *(prism::game_sound_data_u**)sound_data_ptr;
+    }
+
+
+    handle_volume(telemetry_data, camera_manager);
+    handle_engine(telemetry_data, game_ctrl);
     handle_truck_effects(telemetry_data);
    // handle_reefer(telemetry_data);
-    handle_interior(telemetry_data);
+    handle_interior(telemetry_data, game_ctrl, sound_data);
 
 
    // fmod_manager_instance_->set_event_state("retarder/retarder", true, true);
-    fmod_manager_instance_->update(); 
+    fmod_manager_instance_->update();
 }

@@ -1,8 +1,6 @@
-// "bmem" - Baldy-Memory 
-// Custom memory editing functions
-
 #pragma once
 
+#include <windows.h>
 #include <cstdint>
 #include <string>
 #include <sstream>
@@ -44,7 +42,7 @@ namespace bmem
 
 		if (!moduleBase)
 		{
-			printf("[BMEM] Failed to set module to: '%s'. Module not found! | Did you mean '%s.dll' or '%s.exe'?\n", module, module, module);
+			//printf("[BMEM] Failed to set module to: '%s'. Module not found! | Did you mean '%s.dll' or '%s.exe'?\n", module, module, module);
 			return false;
 		}
 
@@ -53,7 +51,7 @@ namespace bmem
 
 		moduleSize = nt_header->OptionalHeader.SizeOfImage;
 
-		printf("[BMEM] Module set to: '%s' (Base: 0x%llx, Size: %llu)\n", module, moduleBase, moduleSize);
+		//printf("[BMEM] Module set to: '%s' (Base: 0x%llx, Size: %llu)\n", module, moduleBase, moduleSize);
 
 		wasModuleSet = true;
 		return true;
@@ -67,7 +65,7 @@ namespace bmem
 
 		if (!setModule(moduleToSet))
 		{
-			printf("[BMEM] bmem::patternScan: Failed to initialize a module\n");
+			//printf("[BMEM] bmem::patternScan: Failed to initialize a module\n");
 			return 0;
 		}
 
@@ -85,7 +83,7 @@ namespace bmem
 			{
 				if (token.length() > 2 || token.length() < 2)
 				{
-					printf("[BMEM] bmem::patternScan: Invalid token: %s\n", token.c_str());
+					//printf("[BMEM] bmem::patternScan: Invalid token: %s\n", token.c_str());
 					return 0;
 				}
 
@@ -139,9 +137,8 @@ namespace bmem
 				}
 				else
 				{
-					//printf("[BMEM] Next byte doesnt match pattern! restarting from next byte\n\n");
+					//printf("[BMEM] Next byte doesnt match pattern! restarting from current pos\n\n");
 
-					i = (patternStart - moduleBase);
 					patternStart = 0;
 					patternIndex = 0;
 					foundFirstByte = false;
@@ -156,37 +153,75 @@ namespace bmem
 
 		if (patternStart != NULL)
 		{
-			printf("[BMEM] bmem::patternScan: Found At: 0x%llx\n", patternStart);
+			//printf("[BMEM] bmem::patternScan: Found At: 0x%llx\n", patternStart);
 		}
 		else
 		{
-			printf("[BMEM] bmem::patternScan: Pattern not found!\n");
+			//printf("[BMEM] bmem::patternScan: Pattern not found!\n");
 		}
 
 		return patternStart;
 	}
 
-	static bool is_address_valid(uint64_t address, const char* moduleToSet = "current")
+	static bool isAddressValid(uintptr_t address)
 	{
-		if (!setModule(moduleToSet))
-		{
-			printf("[BMEM] bmem::is_address_valid: Failed to initialize a module\n");
+		if (address < moduleBase || address >(moduleBase + moduleSize))
 			return false;
-		}
-
-		setModule(moduleToSet);
-
-		if (!address) return false;
-		if (address == NULL) return false;
-
-		if (address > moduleBase + moduleSize) return false;
-		if (address < moduleBase) return false;
 
 		return true;
 	}
 
-	static uintptr_t relativeToAbsolute(uintptr_t address, int addressOffset, int instructionCount)
+	// Converts a relative address to an absolute address
+	static uintptr_t relativeToAbsolute(uintptr_t instructionAddress, int offsetOffset /*  offset from the start of the instruction where the relative offset is stored */, int instructionSize)
 	{
-		return (uintptr_t)(address + instructionCount + *reinterpret_cast<std::int32_t*>(address + addressOffset));
+		int32_t relativeOffset = *reinterpret_cast<int32_t*>(instructionAddress + offsetOffset);
+		uintptr_t absoluteAddress = instructionAddress + instructionSize + relativeOffset;
+		return absoluteAddress;
 	}
+
+
+
+#pragma region Minhook
+
+	static MH_STATUS hookFunction(LPVOID target, LPVOID detour, LPVOID* original)
+	{
+		MH_STATUS status = MH_Initialize();
+		if (status != MH_OK && status != MH_ERROR_ALREADY_INITIALIZED)
+		{
+			//printf("[BMEM] Failed to initialize MinHook! Status: %d\n", status);
+			return status;
+		}
+
+
+		status = MH_CreateHook(target, detour, original);
+		if (status != MH_OK)
+		{
+			//printf("[BMEM] bmem::hookFunction: Failed to create hook! Target: 0x%llx, Detour: 0x%llx\n", target, detour);
+			return status;
+		}
+
+		status = MH_EnableHook((LPVOID)target);
+		if (status != MH_OK)
+		{
+			//printf("[BMEM] bmem::hookFunction: Failed to enable hook! Target: 0x%llx, Detour: 0x%llx\n", target, detour);
+			return status;
+		}
+
+		return status;
+	}
+
+	static MH_STATUS unhookFunction(LPVOID target)
+	{
+		MH_DisableHook(target);
+		MH_RemoveHook(target);
+
+		return MH_OK;
+	}
+
+	static const char* translateMinhookStatus(MH_STATUS status)
+	{
+		return MH_StatusToString(status);
+	}
+
+#pragma endregion
 }

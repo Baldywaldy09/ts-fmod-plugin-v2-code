@@ -19,14 +19,11 @@ namespace prism
 	public:
 		virtual void destructor();
 		virtual void destroy();
-		virtual void Function2();
-		virtual descriptor* get_unit_descriptor();
+		virtual void clone();
+		virtual void Function3();
 		virtual void Function4();
-		virtual void set_attributes();
-		virtual void Function6();
-		virtual void Function7();
-		virtual void Function8();
-		virtual void Function9();
+		virtual descriptor* get_unit_descriptor();
+
 	};
 	static_assert(sizeof(unit_t) == 0x10);
 

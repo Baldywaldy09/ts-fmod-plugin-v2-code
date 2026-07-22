@@ -2,6 +2,8 @@
 
 #pragma pack(push, 1)
 
+#include "fmod.h"
+
 namespace prism
 {
     typedef struct sound_event_t

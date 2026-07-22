@@ -15,8 +15,9 @@
 #include <windows.h>
 #include <shellapi.h>
 
-#include "prism/prism.h"
 #include "prism_cvar/cvar.h"
+
+#include "bmem.h"
 
 namespace fs = std::filesystem;
 
@@ -34,10 +35,10 @@ scs_telemetry_register_for_channel_t register_for_channel = nullptr;
 
 // ALL API FUNCTIONS MUST GO FROM A-Z TO KEEP RVA THE SAME
 
-std::string currentTruckName = "NO_TRUCK"; 
+std::string currentTruckName = "NO_TRUCK";
 TSFMOD_EXPORT TSFMOD_API_VOID a_getCurrentTruckName(char* buffer, size_t bufferSize)
 {
-    scs_log(0, "[ts-fmod-plugin-v2] API Function 'getCurrentTruckName' Called"); 
+    scs_log(0, "[ts-fmod-plugin-v2] API Function 'getCurrentTruckName' Called");
     strncpy_s(buffer, bufferSize, currentTruckName.c_str(), _TRUNCATE);
 }
 
@@ -45,16 +46,28 @@ TSFMOD_EXPORT TSFMOD_API_VOID b_reloadVehicleSounds()
 {
     scs_log(0, "[ts-fmod-plugin-v2] API Function 'reloadVehicleSounds' Called");
 
-    scs_log(0, ("[ts-fmod-plugin-v2] Reloading all events for vehicle " + currentTruckName).c_str());
 
-    fmod_manager_instance->load_truck_banks(fs::current_path().append("plugins/ts-fmod-plugin-v2"), currentTruckName, currentTruckName);
+    scs_log(0, "[ts-fmod-plugin-v2] Reloading all global events ");
+    fmod_manager_instance->load_truck_banks(fs::current_path().append("plugins/ts-fmod-plugin-v2"), "global", "global");
+
     fmod_manager_instance->check_events();
     fmod_manager_instance->mute_game_audio();
 
     // Force engine sound reload
     stored_engine_state = 0;
 
-     
+
+
+    scs_log(0, ("[ts-fmod-plugin-v2] Reloading all events for vehicle " + currentTruckName).c_str());
+    fmod_manager_instance->load_truck_banks(fs::current_path().append("plugins/ts-fmod-plugin-v2"), currentTruckName, currentTruckName);
+
+    fmod_manager_instance->check_events();
+    fmod_manager_instance->mute_game_audio();
+
+    // Force engine sound reload
+    stored_engine_state = 0;
+
+
     scs_log(0, ("[ts-fmod-plugin-v2] Events and audio for vehicle: " + currentTruckName + " have been reloaded").c_str());
 }
 
@@ -156,7 +169,7 @@ void register_all_channels()
     register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_cabin_offset, SCS_U32_NIL, fplacement, truck, cabin_offset)
     register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_cruise_control, SCS_U32_NIL, float, truck, cruise_control)
     register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_dashboard_backlight, SCS_U32_NIL, float, truck, dashboard_backlight)
-    register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_differential_lock, SCS_U32_NIL, bool, truck, differential_lock) 
+    register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_differential_lock, SCS_U32_NIL, bool, truck, differential_lock)
     register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_displayed_gear, SCS_U32_NIL, s32, truck, displayed_gear)
     register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_effective_brake, SCS_U32_NIL, float, truck, effective_brake)
     register_channel(SCS_TELEMETRY_TRUCK_CHANNEL_effective_clutch, SCS_U32_NIL, float, truck, effective_clutch)
@@ -246,7 +259,7 @@ void register_all_channels()
     register_channel(SCS_TELEMETRY_TRAILER_CHANNEL_wheel_susp_deflection, 0, float, trailer, wheel_susp_deflection)
     register_channel(SCS_TELEMETRY_TRAILER_CHANNEL_wheel_velocity, 0, float, trailer, wheel_velocity)
     register_channel(SCS_TELEMETRY_TRAILER_CHANNEL_world_placement, SCS_U32_NIL, dplacement, trailer, world_placement)
-} 
+}
 
 #pragma comment( linker, "/export:scs_telemetry_init=scs_telemetry_init" )
 SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_init_params_t* const params)
@@ -295,7 +308,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 
         if (outfile.is_open())
         {
-            outfile << common::plugin_version << ".1";
+            outfile << common::tsfv_version;
             outfile.close();
         }
         else {
@@ -307,7 +320,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
         std::ofstream outfile(versionTXT, std::ios::trunc); // std::ios::trunc clears the file content
         if (outfile.is_open())
         {
-            outfile << common::plugin_version << ".1";
+            outfile << common::tsfv_version;
             outfile.close();
         }
         else
@@ -341,15 +354,6 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     g_hardcore_simulation   = prism::cvar::get_pointer("g_hardcore_simulation");
     s_reverse_enabled       = prism::cvar::get_pointer("s_reverse_enabled");
     s_suspend_sound         = prism::cvar::get_pointer("s_suspend_sound");
-
-
-    prism::initialization::init_functions(
-        prism::initialization::error_level_enum::hault,
-        prism::initialization::log_destination_enum::local_file,
-        true,
-        true,
-        "ts-fmod-plugin-v2"
-    );
     // End //
 
 
@@ -364,7 +368,7 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
         return SCS_RESULT_generic_error;
     }
     // End //
-    
+
 
     // Create hooks
     g_hooks = new hooks_core(scs_log, fmod_manager_instance);
@@ -403,21 +407,24 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
     if (fmod_manager_instance->get_event("finish"))
     {
         global_variables::audio::navigation = true;
-        prism::cvar::set_value(g_voice_navigation, "1");
-        prism::cvar::set_value(g_voice_navigation_pack, "english_doug_uk");
-        prism::cvar::store(false, true, false);
+        g_voice_navigation->set_value("1");
+
+        g_voice_navigation_pack->set_value("english_doug_uk");
+    //    prism::cvar::store(false, true, false);
     }
     if (fmod_manager_instance->get_event("music/main_menu")) menu_music = true;
 
     fmod_manager_instance->mute_game_audio();
     fmod_manager_instance->set_event_state("music/main_menu", true);
 
-    if (common::has_arg("tsfmodexperimental"))
+    if (common::has_arg("tsfmod_nodeadening"))
     {
-        scs_log(0, "[ts-fmod-plugin-v2] Experimental mode enabled!");
+        scs_log(0, "[ts-fmod-plugin-v2] Sound deadening disabled");
     }
-    else 
-        scs_log(0, "[ts-fmod-plugin-v2] Experimental mode disabled");
+    else
+        scs_log(0, "[ts-fmod-plugin-v2] Sound deadening enabled");
+
+
 
     scs_log(0, "[ts-fmod-plugin-v2] Plugin loaded");
 
@@ -427,6 +434,16 @@ SCSAPI_RESULT scs_telemetry_init(const scs_u32_t version, const scs_telemetry_in
 #pragma comment( linker, "/export:scs_telemetry_shutdown=scs_telemetry_shutdown" )
 SCSAPI_VOID scs_telemetry_shutdown(void)
 {
+    fmod_manager_instance->set_event_parameter("engine/engine", "play", 0.f);
+    fmod_manager_instance->set_event_parameter("engine/exhaust", "play", 0.f);
+    fmod_manager_instance->set_event_parameter("engine/turbo", "play", 0.f);
+
+    fmod_manager_instance->set_event_state("engine/engine", false);
+    fmod_manager_instance->set_event_state("engine/turbo", false);
+    fmod_manager_instance->set_event_state("engine/exhaust", false);
+
+    fmod_manager_instance->update();
+
     // Allow the game audio to take over:
      fmod_manager_instance->unmute_game_audio(); // tmp make crash
 
