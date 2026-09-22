@@ -5,9 +5,9 @@
 namespace common
 {
     inline bool debug = true;
-    inline const char* plugin_version = "1.60";
-    inline const char* tsfv_version = "1.60";
-    constexpr uint32_t supported_game_version = 60;
+    inline const char* plugin_version = "1.61";
+    inline const char* tsfv_version = "1.61";
+    constexpr uint32_t supported_game_version = 61;
 
     inline int argc = -1;
     inline const char** argv = nullptr;

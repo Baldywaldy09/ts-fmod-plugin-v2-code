@@ -54,7 +54,7 @@ bool fmod_manager::load_bank(const std::filesystem::path& plugin_files_dir, std:
     ss << "[ts-fmod-plugin-v2] Using sound bank: '" << bank_name << "'";
     scs_log_(SCS_LOG_TYPE_message, ss.str().c_str());
 
-    init_channels_for_bank(plugin_files_dir, bank_name);
+    return init_channels_for_bank(plugin_files_dir, bank_name);
 }
 
 bool fmod_manager::unload_bank(std::string bank_name)
@@ -153,11 +153,16 @@ bool fmod_manager::load_truck_banks(const std::filesystem::path& plugin_files_di
         {
             for (std::string bank_name : truck["files"])
             {
-                load_bank(plugin_files_dir, bank_name);
+                if (!load_bank(plugin_files_dir, bank_name))
+                {
+                    selected_bank_file.close();
+                    return false;
+                }
             }
         }
     }
     selected_bank_file.close();
+    return true;
 }
 
 void fmod_manager::check_events()
@@ -681,6 +686,8 @@ FMOD_RESULT fmod_manager::set_effect(const char* event_name, bool on)
             channel_group->setLowPassGain(1.0f);
         }
     }
+
+    return FMOD_OK;
 }
 
 FMOD_STUDIO_PLAYBACK_STATE fmod_manager::is_event_playing(const char* event_name)
